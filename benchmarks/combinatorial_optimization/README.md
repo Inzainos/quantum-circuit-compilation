@@ -54,6 +54,6 @@ Pendiente de implementación del circuito baseline.
 
 ## Referencias
 
-- Jordan et al., Nature 2025, arXiv:2510.10967 — Decoded Quantum Interferometry y OPI.
+- Jordan et al., Nature 2025 — Decoded Quantum Interferometry y OPI.
 - Khattar et al. (arXiv:2510.10967) — estimación de coste de DQI y decodador Reed–Solomon.
 - List recovery en teoría de codificación — problema relacionado con OPI.

@@ -26,6 +26,7 @@ from qubit_temporal_manager import QubitTemporalManager, QubitRecord
 # Rutas del proyecto
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VERIFIER_DIR = PROJECT_ROOT / "verifiers"
+# El sample submission de la competencia NO esta versionado; pasar --sample-dir.
 SAMPLE_DFTHCSOS = PROJECT_ROOT / "sample_submission" / "dfthcsos"
 
 
@@ -54,13 +55,16 @@ def run_verifier(run_dir: Path, salt: str = "", timeout: int = 120) -> dict | No
         return {"status": "ERROR", "error": str(e)}
 
 
-def evaluate_params(brot: int, batch_size: int, output_dir: Path) -> dict:
+def evaluate_params(brot: int, batch_size: int, output_dir: Path,
+                    sample_dir: Path = SAMPLE_DFTHCSOS) -> dict:
     """Genera circuitos angle_k con los parametros dados y los verifica."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generar circuitos angle_k usando el script de referencia del example
     ref_script = VERIFIER_DIR / "dfthcsos" / "example_submission" / "angle_k_reference_circuit.py"
-    npz_path = SAMPLE_DFTHCSOS / "submission.npz"
+    npz_path = sample_dir / "submission.npz"
+    if not npz_path.is_file():
+        return {"status": "ERROR", "error": f"No existe {npz_path}; usa --sample-dir"}
 
     cmd = [
         sys.executable,
@@ -74,9 +78,13 @@ def evaluate_params(brot: int, batch_size: int, output_dir: Path) -> dict:
     ]
 
     try:
-        subprocess.run(cmd, capture_output=True, text=True, timeout=60, cwd=str(VERIFIER_DIR))
+        gen = subprocess.run(cmd, capture_output=True, text=True, timeout=600, cwd=str(VERIFIER_DIR))
     except Exception as e:
         return {"status": "ERROR", "error": f"Generacion de circuitos: {e}"}
+    if gen.returncode != 0:
+        return {"status": "ERROR",
+                "error": f"Generacion de circuitos fallo (rc={gen.returncode}): "
+                         f"{(gen.stderr or gen.stdout).strip()[-500:]}"}
 
     # Copiar submission.npz al directorio de salida (el verifier lo necesita)
     import shutil
@@ -86,7 +94,8 @@ def evaluate_params(brot: int, batch_size: int, output_dir: Path) -> dict:
     return run_verifier(output_dir)
 
 
-def optimize_dfthcsos(brot_values: list[int], batch_values: list[int], output_root: Path) -> None:
+def optimize_dfthcsos(brot_values: list[int], batch_values: list[int], output_root: Path,
+                      sample_dir: Path = SAMPLE_DFTHCSOS) -> None:
     """Busqueda de parametros optimos para dfthcsos."""
     results = []
 
@@ -94,7 +103,7 @@ def optimize_dfthcsos(brot_values: list[int], batch_values: list[int], output_ro
         run_dir = output_root / f"brot{brot}_J{batch_size}"
         print(f"\n=== Probando brot={brot}, J={batch_size} ===")
 
-        result = evaluate_params(brot, batch_size, run_dir)
+        result = evaluate_params(brot, batch_size, run_dir, sample_dir)
         status = result.get("status", "ERROR")
 
         entry = {"brot": brot, "batch_size": batch_size, "status": status, "dir": str(run_dir)}
@@ -148,9 +157,11 @@ def main():
                         help="Valores de batch_size J a probar")
     parser.add_argument("--output", type=Path, default=PROJECT_ROOT / "results" / "dfthcsos_optimization",
                         help="Directorio de salida")
+    parser.add_argument("--sample-dir", type=Path, default=SAMPLE_DFTHCSOS,
+                        help="Directorio con el submission.npz de ejemplo de la competencia")
     args = parser.parse_args()
 
-    optimize_dfthcsos(args.brot, args.batch, args.output)
+    optimize_dfthcsos(args.brot, args.batch, args.output, args.sample_dir)
 
 
 if __name__ == "__main__":

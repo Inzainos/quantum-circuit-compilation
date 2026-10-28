@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+ESTADO: ESQUELETO INCOMPLETO (no es un decodificador funcional).
+
 Generador de circuito dqi desde 0 (Benchmark II — Combinatorial Optimization).
 
 Implementa el decodador Reed-Solomon MBUC (Measurement-Based Uncomputation)
@@ -254,7 +256,20 @@ def main():
     parser.add_argument("--degree", type=int, default=12, help="GF(2^b) field degree")
     parser.add_argument("--r", type=int, default=2016, help="Accepted values per constraint")
     parser.add_argument("--format", choices=("kmb", "kmx"), default="kmb")
+    parser.add_argument(
+        "--allow-skeleton", action="store_true",
+        help="Permite escribir el esqueleto NO funcional (EEA y Chien/Forney sin "
+             "implementar). No usar para envios: no es un decodificador.",
+    )
     args = parser.parse_args()
+
+    if not args.allow_skeleton:
+        raise SystemExit(
+            "dqi_from_zero.py es un esqueleto: _forward_eea/_reverse_eea no "
+            "implementan el EEA y Chien/Forney recorre solo 16 de m posiciones. "
+            "El circuito resultante NO es un decodificador Reed-Solomon y no pasaria "
+            "el verificador. Usa --allow-skeleton solo para depuracion."
+        )
 
     params = DQIParams(m=args.m, n=args.n, degree=args.degree, r=args.r)
     decoder = DQIDecoder(params)

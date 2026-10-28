@@ -69,6 +69,8 @@ def main():
     args = parser.parse_args()
 
     circuit = build_dqi_temporal(args.input)
+    print("AVISO: este script NO optimiza el circuito; escribe el baseline sin cambios "
+          "(el temporal manager es solo contabilidad).")
 
     stats = circuit.operation_statistics()
     print(f"Qubits: {circuit.num_qubits}")
