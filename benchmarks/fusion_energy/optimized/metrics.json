@@ -1,0 +1,44 @@
+{
+  "benchmark": "invsqrt",
+  "task": "Fusion Energy — 1/sqrt(x) Phasing",
+  "algorithm": "Newton-Raphson 3-step with dbhexa precision optimization",
+  "status": "PASS",
+  "verified_shots": 640000,
+  "max_x_tested": 10000,
+  "shots_per_x": 64,
+  "metrics": {
+    "score_q_times_c": 1880870.11,
+    "num_qubits": 254,
+    "toffoli_count": 7405.0,
+    "toffoli_equivalent": 7618.122468768528,
+    "t_count": 1.0,
+    "rotation_count": 35,
+    "rotation_eps": 5.90580525807952e-11,
+    "num_ops": 59598,
+    "reaction_depth": 3840,
+    "circuit_sha256": "ed464cedc1f2bd5aeddeecb37fb05fd5543b3bf9de4827296916f1e32aea2f8e"
+  },
+  "baseline_comparison": {
+    "baseline_score": 2070562.565826548,
+    "dbhexa_score": 1880870.11,
+    "improvement_percent": -9.11,
+    "qubits_saved": 6,
+    "toffoli_saved": 330
+  },
+  "spec": {
+    "n_p": 10,
+    "width": 22,
+    "max_x": 3133452,
+    "beta": 1,
+    "precision_bits": 24
+  },
+  "dbhexa_precision": {
+    "delta_bits": 14,
+    "coef_bits": 17,
+    "square_bits": 27,
+    "product_bits": 27,
+    "result_bits": 27
+  },
+  "worst_error_over_tolerance": 0.7021600986214407,
+  "worst_x": 182
+}

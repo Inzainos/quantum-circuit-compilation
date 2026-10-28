@@ -1,0 +1,54 @@
+[
+  {
+    "brot": 8,
+    "batch_size": 4,
+    "status": "FAIL",
+    "dir": "results/dfthcsos_test/brot8_J4",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"no angle_k_0.kmb or angle_k_0.kmx in results/dfthcsos_test/brot8_J4\"\n}"
+  },
+  {
+    "brot": 8,
+    "batch_size": 8,
+    "status": "FAIL",
+    "dir": "results/dfthcsos_test/brot8_J8",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"no angle_k_0.kmb or angle_k_0.kmx in results/dfthcsos_test/brot8_J8\"\n}"
+  },
+  {
+    "brot": 10,
+    "batch_size": 4,
+    "status": "FAIL",
+    "dir": "results/dfthcsos_test/brot10_J4",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"no angle_k_0.kmb or angle_k_0.kmx in results/dfthcsos_test/brot10_J4\"\n}"
+  },
+  {
+    "brot": 10,
+    "batch_size": 8,
+    "status": "FAIL",
+    "dir": "results/dfthcsos_test/brot10_J8",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"no angle_k_0.kmb or angle_k_0.kmx in results/dfthcsos_test/brot10_J8\"\n}"
+  },
+  {
+    "brot": 12,
+    "batch_size": 4,
+    "status": "PASS",
+    "dir": "results/dfthcsos_test/brot12_J4",
+    "score": 5540116045.452661,
+    "lambda_eff": 49.30136925057438,
+    "T_total": 164769.0,
+    "num_qubits": 682,
+    "Lambda": null,
+    "E_gap": null
+  },
+  {
+    "brot": 12,
+    "batch_size": 8,
+    "status": "PASS",
+    "dir": "results/dfthcsos_test/brot12_J8",
+    "score": 3355599588.3155365,
+    "lambda_eff": 49.30136925057438,
+    "T_total": 93237.0,
+    "num_qubits": 730,
+    "Lambda": null,
+    "E_gap": null
+  }
+]

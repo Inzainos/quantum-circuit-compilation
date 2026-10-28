@@ -1,0 +1,24 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Large generated circuits and benchmark data (GitHub rejects blobs over 100 MiB)
+*.kmb
+*.kmx
+*.npz
+*.fcidump
+
+# Local compiled binary and downloaded reference paper
+/kickmix/*.so
+/verifiable_circuit_compilation.pdf
+
+# Local AI conversation notes
+/dbhexa.txt

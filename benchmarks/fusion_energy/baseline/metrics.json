@@ -1,0 +1,30 @@
+{
+  "benchmark": "invsqrt",
+  "task": "Fusion Energy — 1/sqrt(x) Phasing",
+  "algorithm": "Newton-Raphson 3-step (reference from arXiv:2308.12352)",
+  "status": "PASS",
+  "verified_shots": 640000,
+  "max_x_tested": 10000,
+  "shots_per_x": 64,
+  "metrics": {
+    "score_q_times_c": 2070562.565826548,
+    "num_qubits": 260,
+    "toffoli_count": 7735.0,
+    "toffoli_equivalent": 7963.702176255954,
+    "t_count": 1.0,
+    "rotation_count": 37,
+    "rotation_eps": 3.739273582027786e-11,
+    "num_ops": 62160,
+    "reaction_depth": 4005,
+    "circuit_sha256": "e2bf8eb64350a4460a271fc7f1d591ef125b1e276377e9a0f64b96ab3ca321e1"
+  },
+  "spec": {
+    "n_p": 10,
+    "width": 22,
+    "max_x": 3133452,
+    "beta": 1,
+    "precision_bits": 24
+  },
+  "worst_error_over_tolerance": 0.42871093750805755,
+  "worst_x": 729
+}

@@ -1,0 +1,11 @@
+[project]
+name = "quantum-circuit-compilation"
+version = "0.1.0"
+description = "Optimizers and verifiers for the Google Verifiable Quantum Circuit Compilation competition."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "qualtran",
+]
