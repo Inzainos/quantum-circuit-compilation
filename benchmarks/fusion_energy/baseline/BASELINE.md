@@ -28,14 +28,14 @@
 
 - Archivo: `benchmarks/fusion_energy/optimized/invsqrt_dbhexa_opt2.kmb`
 - Generado con: `verifiers/invsqrt/nr_reference_circuit.py --n-p 10 --format kmb` con precisión reducida
-- Optimización: `result_bits=28 → 27` (reduce Q en 1 y Toffolis en 88)
+- Optimización: `square_bits=28→27`, `product_bits=28→27`, `result_bits=29→27` (Q 260→254, Toffolis 7,735→7,405). Verificado con `verify_submission_invsqrt.py`; `result_bits=28` NO es válido (falla en x=917115).
 
 ## Métricas de verificación (dbhexa optimizado)
 
 | Métrica | Valor | Mejora vs baseline |
 |---------|-------|-------------------|
 | Status | PASS | Verificado con `--max-x 10000 --shots-per-x 64` |
-| Score (Q × C) | 1,880,870 | **−9.1%** |
+| Score (Q × C) | 1,935,003 | **−6.5%** (Q × `toffoli_equivalent`, misma definición que el baseline) |
 | Q (num_qubits) | 254 | −6 (−2.3%) |
 | Toffoli count | 7,405 | −330 (−4.3%) |
 | T count | 1.0 | sin cambio |
@@ -44,8 +44,8 @@
 | C (toffoli_equivalent) | 7,618.12 | −345 (−4.3%) |
 | Num ops | 59,598 | −2,562 |
 | Reaction depth | 3,840 | −165 |
-| Verified shots | 640,000 | mismo |
-| Worst error/tolerance | 0.70 | x=182, margen aceptable |
+| Verified shots | 640,000 (parcial) + 3,133,440 (dominio completo, 1 shot/x) | ver `optimized/metrics.json` |
+| Worst error/tolerance | 0.70 (x≤10000) / **0.953 (dominio completo, x=3133367)** | El peor caso está fuera del subconjunto probado; margen de ~4.7% |
 | Circuit SHA-256 | ed464ced... | Identificador del circuito |
 
 ## Especificación del problema (invsqrt)
@@ -70,11 +70,23 @@
 | product_bits | 28 | 27 (−1 bit) |
 | result_bits | 29 | 27 (−2 bits) |
 
+Barrido medido (Q / Toffolis / peor error relativo sobre todo el dominio, tolerancia 2^-24 = 5.96e-8):
+
+| sq/pr/rs | Q | Toffoli | peor err / tol | Estado |
+|----------|---|---------|----------------|--------|
+| 28/28/29 | 260 | 7,735 | 0.477 | PASS (baseline) |
+| 27/27/29 | 257 | 7,577 | 1.132 | FAIL |
+| 27/27/28 | 255 | 7,493 | 1.039 | FAIL |
+| 27/27/27 | 254 | 7,405 | 0.953 | PASS |
+| 27/27/26 | 253 | 7,317 | 2.058 | FAIL |
+| 26/27/27 | 253 | 7,385 | 1.650 | FAIL |
+| 27/26/27 | 251 | 7,319 | 1.657 | FAIL |
+
 ## Plan de optimización adicional
 
 Para reducir aún más el score (objetivo: <1.5M):
 
-1. **Reducir más bits de precisión**: `result_bits=26` ya falla (overflow o error demasiado grande). `square_bits=26` o `product_bits=26` también fallan. Llegamos al límite de precisión con esta arquitectura.
+1. **Reducir más bits de precisión**: `result_bits=26`, `square_bits=26` y `product_bits=26` fallan (ver barrido). Se llegó al límite de precisión con esta arquitectura; el margen en 27/27/27 es de solo ~4.7%.
 
 2. **Reducir Toffoli count**: 7,405 por shot. Oportunidades:
    - Mejor aproximación inicial (menos iteraciones Newton)

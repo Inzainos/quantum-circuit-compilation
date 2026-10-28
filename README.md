@@ -107,11 +107,23 @@ quantum-circuit-compilation/
 
 ### Publicación en GitHub
 
-`submission/final_submission.zip` se incluye como artefacto de envío. Los
-circuitos y datasets individuales (`.kmb`, `.kmx`, `.npz`, `.fcidump`), el
-entorno virtual y la copia local del paper no se versionan: algunos superan
-el límite de 100 MiB por archivo de GitHub. El paper se cita arriba para
-consultarlo en arXiv.
+`submission/final_submission.zip` (~74 MB, ~910 MB descomprimido) está versionado
+como artefacto de envío. Los circuitos y datasets sueltos (`.kmb`, `.kmx`,
+`.npz`, `.fcidump`), el entorno virtual y la copia local del paper no se
+versionan (`.gitignore`): algunos superan el límite de 100 MiB por archivo de
+GitHub. Cada nuevo commit del ZIP infla el historial; para versiones siguientes
+usa Releases o Git LFS en lugar de versionar el ZIP.
+
+## Estado actual (2026-10-27)
+
+| Tarea | Estado | Evidencia |
+|-------|--------|-----------|
+| invsqrt | Mejora real, ~6.5% (Q×C: 2,070,563 → 1,935,003) por reducción de bits (`square/product/result` = 27/27/27). PASS en dominio completo, margen ~4.7%. | `benchmarks/fusion_energy/optimized/metrics.json` |
+| dqi | Sin optimización propia. `src/dqi_from_zero.py` es un esqueleto (EEA y Chien/Forney sin implementar) y `src/dqi_optimizer.py` devuelve el baseline sin cambios. | `src/dqi_from_zero.py` |
+| dfthcsos | Solo barrido de `brot`/`batch_size` sobre el circuito de ejemplo; sin baseline de comparación. | `results/dfthcsos_test/` |
+
+`QubitTemporalManager` (`src/qubit_temporal_manager.py`) es solo contabilidad
+y no modifica ningún circuito.
 
 ### `submission/` — Construcción del ZIP de envío
 
@@ -174,7 +186,8 @@ El verificador hace **fuzz testing** de tu circuito: simula sobre cada input vá
 - Khattar et al. (arXiv:2610.23832) — paper acompañante de la competición: kickmix package, garantías de verificación, los tres benchmarks.
 - Babbush et al. (arXiv:2603.28846) — introdujo kickmix circuits y este estilo de verificación para estimar coste de romper criptografía de curvas elípticas.
 - Rubin et al., PNAS 2024 — stopping power en fusión por confinamiento inercial.
-- Jordan et al., Nature 2025, arXiv:2510.10967 — Decoded Quantum Interferometry y OPI.
+- Jordan et al., Nature 2025 — Decoded Quantum Interferometry y OPI.
+- Khattar et al., arXiv:2510.10967 — estimación de coste de DQI y decodificador Reed–Solomon.
 - Reiher et al., PNAS 2017 — simulación de FeMoCo / fijación de nitrógeno.
 - Low et al., PRX 2025 — algoritmos eficientes de block encoding y QROM.
 - **Citación de la competición:** Tanuj Khattar, Nicholas Rubin, Craig Gidney, Michael Broughton, Guang Hao Low, Ryan Babbush, Sohier Dane, Brandon Horton, and María Cruz. Google Quantum AI - Verifiable Quantum Circuit Compilation. https://www.kaggle.com/competitions/google-verifiable-quantum-circuit-compilation, 2026. Kaggle.

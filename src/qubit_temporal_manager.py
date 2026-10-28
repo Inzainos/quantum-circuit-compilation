@@ -9,6 +9,11 @@ Reglas:
    (liberan su ancilla/tmp) porque no sufrieron modificación.
 
 Integra con kickmix.CircuitBuilder para rastrear qubits, ancillas y sus hashes.
+
+ADVERTENCIA: este modulo es SOLO contabilidad logica. No modifica, optimiza ni
+libera qubits de ningun circuito: el "hash" es la identidad del objeto Python
+(no el estado del qubit), por lo que hash_in == hash_out siempre. Ningun ahorro
+de qubits o Toffolis reportado en este repositorio proviene de este modulo.
 """
 
 from __future__ import annotations

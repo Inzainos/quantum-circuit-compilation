@@ -7,7 +7,7 @@
   "max_x_tested": 10000,
   "shots_per_x": 64,
   "metrics": {
-    "score_q_times_c": 1880870.11,
+    "score_q_times_c": 1935003.1070672062,
     "num_qubits": 254,
     "toffoli_count": 7405.0,
     "toffoli_equivalent": 7618.122468768528,
@@ -20,10 +20,12 @@
   },
   "baseline_comparison": {
     "baseline_score": 2070562.565826548,
-    "dbhexa_score": 1880870.11,
-    "improvement_percent": -9.11,
+    "dbhexa_score": 1935003.1070672062,
+    "score_definition": "num_qubits * toffoli_equivalent (misma definicion que el baseline)",
+    "score_reduction_percent": 6.55,
     "qubits_saved": 6,
-    "toffoli_saved": 330
+    "toffoli_saved": 330,
+    "correction_note": "La version anterior reportaba dbhexa_score=1880870.11 (=254*toffoli_count=7405) con improvement_percent=-9.11; no era comparable con el baseline (260*toffoli_equivalent). Corregido el 2026-10-27."
   },
   "spec": {
     "n_p": 10,
@@ -37,8 +39,24 @@
     "coef_bits": 17,
     "square_bits": 27,
     "product_bits": 27,
-    "result_bits": 27
+    "result_bits": 27,
+    "note": "result_bits=27 verificado: Q=254, Toffoli=7405. result_bits=28 (default previo de dbhexa_invsqrt_final.py) produce Q=255, Toffoli=7493 y FALLA el verificador (x=917115)."
   },
   "worst_error_over_tolerance": 0.7021600986214407,
-  "worst_x": 182
+  "worst_x": 182,
+  "full_domain_verification": {
+    "verifier": "verifiers/invsqrt/verify_submission_invsqrt.py --max-x 3133440 --shots-per-x 1",
+    "status": "PASS",
+    "verified_shots": 3133440,
+    "worst_error_over_tolerance": 0.9529357537487166,
+    "worst_x": 3133367,
+    "note": "Cubre x=1..3133440 (omite los 12 valores superiores hasta max_x=3133452). El peor caso queda fuera del subconjunto x<=10000 de la verificacion original; margen de solo ~4.7%.",
+    "heavy_run": {
+      "args": "--max-x 3133440 --shots-per-x 16 --salt fixcheck",
+      "status": "PASS",
+      "verified_shots": 50135040,
+      "worst_error_over_tolerance": 0.9529357537487166,
+      "worst_x": 3133367
+    }
+  }
 }

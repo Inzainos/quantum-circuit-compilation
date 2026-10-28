@@ -10,8 +10,12 @@ Integra las 3 reglas de qubits temporales sobre el reference verificado de kickm
 3. Exit: si hash_in == hash_out (no hubo modificacion), el qubit se elimina.
 
 El circuito base usa build_nr_circuit del reference (verificado PASS) con
-parametros dbhexa optimizados (square=27, product=27, result=28 ->
-Q=254, T=7405, mejora del 9.1% sobre baseline Q=260, T=7735).
+parametros dbhexa optimizados (square=27, product=27, result=27 ->
+Q=254, T=7405; ~6.5% menos Q x toffoli_equivalent que el baseline Q=260, T=7735).
+
+NOTA: result_bits=28 NO es valido (Q=255, T=7493, falla el verificador).
+La capa QubitTemporalManager es solo contabilidad: no modifica el circuito.
+Todo el ahorro proviene de los anchos de bit en Precision().
 """
 
 from __future__ import annotations
@@ -38,7 +42,7 @@ DBHEXA_PRECISION = Precision(
     coef_bits=17,
     square_bits=27,
     product_bits=27,
-    result_bits=28,
+    result_bits=27,
 )
 
 
@@ -54,7 +58,7 @@ class DbHexaInvSqrt:
                  coef_bits: int = 17,
                  square_bits: int = 27,
                  product_bits: int = 27,
-                 result_bits: int = 28):
+                 result_bits: int = 27):
         self.n_p = n_p
         self.width = 2 * n_p + 2
         self.prec = Precision(
