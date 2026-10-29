@@ -76,3 +76,42 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 /tmp/py313-venv/bin/python verifiers/dqi/verify_submission_dqi.py /tmp/dqi_optimized_v2.kmb --num-shots 2560 --batch-size 256 --max-workers 1
 ```
 
+## [Unreleased] - 2026-10-29 — DQI v10 (Horner iQFT) + Submission actualizado
+
+### DQI v10 — Horner iQFT reemplaza Chien+Forney
+- `src/dqi_optimized_v10.py` — arquitectura con Horner iQFT: evalúa σ(α^j) secuencialmente, eliminando registros reg_b de Chien (73×12 = 876 qubits).
+- Optimizaciones combinadas: counter 7-bit, active length tracking (b_len), scaffold reuse para divisiones, adjoint cleanup pipeline (reverse EEA).
+- Resultado verificado (2,560 shots): **PASS**
+  - Q: 1,888 (vs 1,889 v2)
+  - T: 5,708,480 (vs 5,712,031 v2, -3,551 Toffolis)
+  - Score: 100,553,499,141,099 (-0.82% vs baseline 101.38T)
+  - Mejora vs v2: -0.16% (1 qubit, 3.5K Toffolis)
+
+### Submission ZIP actualizado
+- `submission/submission.zip` — ZIP final listo para Kaggle (74 MB comprimido, 915 MB descomprimido)
+  - invsqrt.kmb: piecewise deg=2,j=7,wc=28,dd=13 (Q=185, T=2,993, score=593,733)
+  - dqi.kmb: v10 Horner iQFT (Q=1,888, T=5,708,480, score=100.55T)
+  - dfthcsos/: 10 angle_k_*.kmx + submission.npz (brot=12,J=8, score=3.36B)
+- Backup anterior: `submission/submission_2026-10-28.zip`
+
+### Qualtran Bloqs — Arquitectura unificada DQI
+- `src/qualtran_bloqs/` — Bloqs Qualtran unificando 3 enfoques:
+  - v5: scaffold reuse, BMA, testbench
+  - motorv15: adjoint cleanup pipeline (Forney† → Chien† → BMA† → EEA†)
+  - planB: custom Cirq gates con _t_complexity_ hardcodeado
+- Bloqs: BMABloq, EEABloq, ChienForneyBloq, DQIDecoderBloq, DQIMasterPipeline
+- Plan B Gates: InzainosGaloisMultiplier/Adder/Inverse (222/12/888 Toffolis)
+- Testbench: VerificadorAislado con simulación clásica GF(2^12)
+
+### Verificaciones completadas
+- invsqrt: 64 shots/x (10K max) + 1 shot/x (dominio completo 3.1M) → PASS
+- dqi v10: 2,560 shots, 0 errors → PASS
+- dfthcsos: brot=12,J=8 → PASS
+
+### Estado actual (2026-10-29)
+| Tarea | Circuito | Score | Mejora vs Baseline |
+|-------|----------|-------|-------------------|
+| invsqrt | piecewise (deg=2,j=7,wc=28,dd=13) | 593,733 | −71.3% |
+| dqi | v10 Horner iQFT | 100.55T | −0.82% |
+| dfthcsos | brot=12,J=8 | 3.36B | PASS |
+

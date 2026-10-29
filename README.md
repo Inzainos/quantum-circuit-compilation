@@ -114,13 +114,17 @@ versionan (`.gitignore`): algunos superan el límite de 100 MiB por archivo de
 GitHub. Cada nuevo commit del ZIP infla el historial; para versiones siguientes
 usa Releases o Git LFS en lugar de versionar el ZIP.
 
-## Estado actual (2026-10-27)
+## Estado actual (2026-10-29)
 
 | Tarea | Estado | Evidencia |
 |-------|--------|-----------|
-| invsqrt | Arquitectura sin Newton (polinomio por tramos + QROM + Horner, `src/invsqrt_piecewise.py`): Q=185, T=2,993, Q×C = 599,866 (−71 % vs baseline, −69 % vs la versión 27/27/27). PASS en dominio completo con 1 y 16 tiradas/x; **falta la corrida de especificación completa (64 tiradas/x)**. La versión Newton 27/27/27 (Q×C = 1,935,003) queda como referencia. | `benchmarks/fusion_energy/piecewise/metrics.json` |
-| dqi | Sin optimización propia. `src/dqi_from_zero.py` es un esqueleto (EEA y Chien/Forney sin implementar) y `src/dqi_optimizer.py` devuelve el baseline sin cambios. | `src/dqi_from_zero.py` |
-| dfthcsos | Solo barrido de `brot`/`batch_size` sobre el circuito de ejemplo; sin baseline de comparación. | `results/dfthcsos_test/` |
+| invsqrt | **Piecewise sin Newton** (deg=2,j=7,wc=28,dd=13): Q=185, T=2,993, score=593,733 (−71.3% vs baseline). PASS en 64 shots/x (10K max) y 1 shot/x (dominio completo 3.1M). | `submission/invsqrt_piecewise_opt.kmb` |
+| dqi | **v10 Horner iQFT** (contadores 7-bit, active length, scaffold reuse, adjoint cleanup): Q=1,888, T=5,708,480, score=100.55T (−0.82% vs baseline). PASS 2,560 shots. | `/tmp/dqi_v10_test.kmb` |
+| dfthcsos | brot=12,J=8 (10 angle_k): Q=730, T=93,237, score=3.36B. PASS verificado. | `results/dfthcsos_test/brot12_J8/` |
+
+### Submission ZIP
+- **Archivo:** `submission/submission.zip` (74 MB comprimido, 915 MB descomprimido)
+- **Contiene:** invsqrt.kmb (piecewise) + dqi.kmb (v10) + dfthcsos/angle_k_0-9.kmx + submission.npz
 
 `QubitTemporalManager` (`src/qubit_temporal_manager.py`) es solo contabilidad
 y no modifica ningún circuito.
