@@ -55,12 +55,22 @@ class SearchResult:
     status: str  # "PASS", "FAIL_MODEL", "FAIL_VERIFY", "ERROR"
 
 
-def test_precision(prec: Precision, n_p: int = 10, verify_shots: int = 1000) -> SearchResult:
-    """Prueba una configuración de precisión completa."""
-    max_x = 3 * (2**n_p - 2)**2
-    xs = np.arange(1, max_x + 1, dtype=np.int64)
+BATCH_SIZE = 256  # Verifier default; num_shots must be a multiple of this.
 
-    # 1. Verificar modelo de punto fijo
+
+def test_precision(prec: Precision, n_p: int = 10,
+                   max_x_subset: int = 256, shots_per_x: int = 64) -> SearchResult:
+    """Prueba una configuración de precisión completa.
+
+    `max_x_subset` es el subconjunto de valores x [1..max_x_subset] a verificar
+    (rápido para optimización). `shots_per_x` disparos por x. El producto
+    `max_x_subset * shots_per_x` se redondea a múltiplo de BATCH_SIZE para el
+    verificador oficial.
+    """
+    max_x_full = 3 * (2**n_p - 2)**2
+    xs = np.arange(1, max_x_full + 1, dtype=np.int64)
+
+    # 1. Verificar modelo de punto fijo sobre el dominio completo
     try:
         error = relative_error(n_p, prec, xs)
         max_err_log2 = math.log2(error.max())
@@ -80,7 +90,15 @@ def test_precision(prec: Precision, n_p: int = 10, verify_shots: int = 1000) -> 
             status="FAIL_MODEL"
         )
 
-    # 2. Generar circuito y verificar con el verificador oficial
+    # 2. Generar circuito y verificar con el verificador oficial (subconjunto rápido)
+    max_x_verify = min(max_x_subset, max_x_full)
+    # Redondear hacia abajo a múltiplo de BATCH_SIZE / shots_per_x para que
+    # num_shots = max_x_verify * shots_per_x sea múltiplo de BATCH_SIZE.
+    divisor = BATCH_SIZE // __import__('math').gcd(BATCH_SIZE, shots_per_x)
+    max_x_verify = (max_x_verify // divisor) * divisor
+    if max_x_verify < 1:
+        max_x_verify = 1
+
     with tempfile.NamedTemporaryFile(suffix='.kmb', delete=False) as f:
         tmp_path = f.name
 
@@ -89,11 +107,12 @@ def test_precision(prec: Precision, n_p: int = 10, verify_shots: int = 1000) -> 
         stats = circuit.operation_statistics()
         circuit.to_file(tmp_path, format='kmb')
 
-        # Verificar con subconjunto
+        # Verificar con subconjunto rápido
+        num_shots = max_x_verify * shots_per_x
         result = subprocess.run(
             [sys.executable, "verifiers/invsqrt/verify_submission_invsqrt.py", tmp_path,
-             "--n-p", str(n_p), "--max-x", str(min(verify_shots, max_x)),
-             "--shots-per-x", "1"],
+             "--n-p", str(n_p), "--max-x", str(max_x_verify),
+             "--shots-per-x", str(shots_per_x)],
             capture_output=True, text=True, timeout=300
         )
 
