@@ -118,7 +118,7 @@ usa Releases o Git LFS en lugar de versionar el ZIP.
 
 | Tarea | Estado | Evidencia |
 |-------|--------|-----------|
-| invsqrt | Mejora real, ~6.5% (Q×C: 2,070,563 → 1,935,003) por reducción de bits (`square/product/result` = 27/27/27). PASS en dominio completo, margen ~4.7%. | `benchmarks/fusion_energy/optimized/metrics.json` |
+| invsqrt | Arquitectura sin Newton (polinomio por tramos + QROM + Horner, `src/invsqrt_piecewise.py`): Q=185, T=2,993, Q×C = 599,866 (−71 % vs baseline, −69 % vs la versión 27/27/27). PASS en dominio completo con 1 y 16 tiradas/x; **falta la corrida de especificación completa (64 tiradas/x)**. La versión Newton 27/27/27 (Q×C = 1,935,003) queda como referencia. | `benchmarks/fusion_energy/piecewise/metrics.json` |
 | dqi | Sin optimización propia. `src/dqi_from_zero.py` es un esqueleto (EEA y Chien/Forney sin implementar) y `src/dqi_optimizer.py` devuelve el baseline sin cambios. | `src/dqi_from_zero.py` |
 | dfthcsos | Solo barrido de `brot`/`batch_size` sobre el circuito de ejemplo; sin baseline de comparación. | `results/dfthcsos_test/` |
 

@@ -1,0 +1,63 @@
+{
+  "benchmark": "invsqrt",
+  "task": "Fusion Energy — 1/sqrt(x) Phasing",
+  "algorithm": "Polinomio por tramos (sin Newton-Raphson): QROM init_lookup + Horner (src/invsqrt_piecewise.py)",
+  "status": "PASS (criba 1 tirada/x y 16 tiradas/x); especificacion completa 64 tiradas/x PENDIENTE",
+  "spec": {
+    "deg": 2,
+    "j": 7,
+    "wc": 28,
+    "dd": 13,
+    "n_p": 10,
+    "width": 22,
+    "max_x": 3133452,
+    "beta": 1,
+    "precision_bits": 24
+  },
+  "metrics": {
+    "score_q_times_c": 599866.4916762118,
+    "num_qubits": 185,
+    "toffoli_count": 2993.0,
+    "toffoli_equivalent": 3242.5215766281717,
+    "t_count": 1.0,
+    "rotation_count": 35.0,
+    "rotation_eps": 3.4285548807195615e-13,
+    "num_ops": 46016,
+    "reaction_depth": 1181,
+    "circuit_sha256": "c6e080b01b8d92508f278af4dbe2407d55a66f2c1876cb601f7a0047afa59bdd"
+  },
+  "comparison": {
+    "baseline_score": 2070562.565826548,
+    "previous_best_score": 1935003.1070672062,
+    "score_reduction_vs_baseline_percent": 71.03,
+    "score_reduction_vs_previous_best_percent": 69.0
+  },
+  "verification": [
+    {
+      "args": "--max-x 3133440 --shots-per-x 1",
+      "status": "PASS",
+      "verified_shots": 3133440,
+      "worst_error_over_tolerance": 0.8934432525547626,
+      "worst_x": 2764799
+    },
+    {
+      "args": "--max-x 3133440 --shots-per-x 16 --salt pw16",
+      "status": "PASS",
+      "verified_shots": 50135040,
+      "worst_error_over_tolerance": 0.8934432525547626,
+      "worst_x": 2764799
+    },
+    {
+      "args": "(especificacion completa: 64 tiradas por x, ~200M)",
+      "status": "PENDIENTE",
+      "note": "Ejecutar: python verifiers/invsqrt/verify_submission_invsqrt.py <circuito.kmb> --n-p 10. Antes de afirmar el resultado."
+    }
+  ],
+  "search": "src/dbhexa_orchestrator.py --arch pw: 192 candidatos (deg 2-3, j 5-8, wc 27-30, dd-recorte 0-5); ninguno supera este.",
+  "breakdown_toffolis": {
+    "horner": 1642,
+    "lookup_init_mas_del": 551,
+    "denormalizar": 560,
+    "normalizar": 240
+  }
+}
