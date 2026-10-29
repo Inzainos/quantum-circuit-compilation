@@ -9,6 +9,7 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+documentacion/
 
 # Large generated circuits and benchmark data (GitHub rejects blobs over 100 MiB)
 *.kmb
@@ -22,3 +23,6 @@ dist/
 
 # Local AI conversation notes
 /dbhexa.txt
+
+# Generated submission ZIPs (do not version large artifacts)
+*.zip
