@@ -59,6 +59,7 @@ def evaluate_params(brot: int, batch_size: int, output_dir: Path,
                     sample_dir: Path = SAMPLE_DFTHCSOS) -> dict:
     """Genera circuitos angle_k con los parametros dados y los verifica."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    sample_dir = sample_dir.resolve()  # el subprocess corre con cwd=VERIFIER_DIR
 
     # Generar circuitos angle_k usando el script de referencia del example
     ref_script = VERIFIER_DIR / "dfthcsos" / "example_submission" / "angle_k_reference_circuit.py"
