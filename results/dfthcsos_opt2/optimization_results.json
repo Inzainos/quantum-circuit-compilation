@@ -1,0 +1,75 @@
+[
+  {
+    "brot": 10,
+    "batch_size": 4,
+    "status": "ERROR",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot10_J4",
+    "error": "Generacion de circuitos fallo (rc=1): /verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 148, in <genexpr>\n    return tuple(build_angle_k_circuit(delta, brot) for delta in batch_deltas(angle_words, batch_size))\n                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"/home/deamon/quantum-circuit-compilation/verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 100, in build_angle_k_circuit\n    raise ValueError(f\"words must lie in [0, 2**{brot})\")\nValueError: words must lie in [0, 2**10)"
+  },
+  {
+    "brot": 10,
+    "batch_size": 8,
+    "status": "ERROR",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot10_J8",
+    "error": "Generacion de circuitos fallo (rc=1): /verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 148, in <genexpr>\n    return tuple(build_angle_k_circuit(delta, brot) for delta in batch_deltas(angle_words, batch_size))\n                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"/home/deamon/quantum-circuit-compilation/verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 100, in build_angle_k_circuit\n    raise ValueError(f\"words must lie in [0, 2**{brot})\")\nValueError: words must lie in [0, 2**10)"
+  },
+  {
+    "brot": 10,
+    "batch_size": 12,
+    "status": "ERROR",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot10_J12",
+    "error": "Generacion de circuitos fallo (rc=1): /verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 148, in <genexpr>\n    return tuple(build_angle_k_circuit(delta, brot) for delta in batch_deltas(angle_words, batch_size))\n                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"/home/deamon/quantum-circuit-compilation/verifiers/dfthcsos/example_submission/angle_k_reference_circuit.py\", line 100, in build_angle_k_circuit\n    raise ValueError(f\"words must lie in [0, 2**{brot})\")\nValueError: words must lie in [0, 2**10)"
+  },
+  {
+    "brot": 12,
+    "batch_size": 4,
+    "status": "PASS",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot12_J4",
+    "score": 5540116045.452661,
+    "lambda_eff": 49.30136925057438,
+    "T_total": 164769.0,
+    "num_qubits": 682,
+    "Lambda": null,
+    "E_gap": null
+  },
+  {
+    "brot": 12,
+    "batch_size": 8,
+    "status": "PASS",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot12_J8",
+    "score": 3355599588.3155365,
+    "lambda_eff": 49.30136925057438,
+    "T_total": 93237.0,
+    "num_qubits": 730,
+    "Lambda": null,
+    "E_gap": null
+  },
+  {
+    "brot": 12,
+    "batch_size": 12,
+    "status": "FAIL",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot12_J12",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"an ANGLE_k circuit uses 167 qubits > 128\"\n}"
+  },
+  {
+    "brot": 14,
+    "batch_size": 4,
+    "status": "FAIL",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot14_J4",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"error_1 = 474599.9841 mHa > 20 mHa; error_2 = 202598.6874 mHa > 20 mHa\"\n}"
+  },
+  {
+    "brot": 14,
+    "batch_size": 8,
+    "status": "FAIL",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot14_J8",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"error_1 = 474599.9841 mHa > 20 mHa; error_2 = 202598.6874 mHa > 20 mHa; an ANGLE_k circuit uses 135 qubits > 128\"\n}"
+  },
+  {
+    "brot": 14,
+    "batch_size": 12,
+    "status": "FAIL",
+    "dir": "/home/deamon/quantum-circuit-compilation/results/dfthcsos_opt2/brot14_J12",
+    "error": "{\n  \"status\": \"FAIL\",\n  \"error\": \"error_1 = 474599.9841 mHa > 20 mHa; error_2 = 202598.6874 mHa > 20 mHa; an ANGLE_k circuit uses 191 qubits > 128\"\n}"
+  }
+]
