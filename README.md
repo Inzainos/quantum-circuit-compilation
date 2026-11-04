@@ -99,12 +99,6 @@ quantum-circuit-compilation/
 │   ├── combinatorial_optimization/    # dqi — Reed–Solomon syndrome decoder
 │   └── quantum_chemistry/             # dfthcsos — Hamiltonian Block Encoding (FeMoCo)
 ├── submission/                        # Plantilla y scripts para construir el ZIP de envío
-├── submission_final/                  # Submission optimizado final
-│   ├── invsqrt.kmb
-│   ├── dqi.kmb
-│   └── dfthcsos/
-│       ├── submission.npz
-│       └── angle_k_*.kmb
 ├── src/                               # Código compartido, wraps kickmix, métricas, agentes AI
 ├── tests/                             # Pruebas de verificación de circuitos
 ├── docs/                              # Papers de referencia, glosario, contexto de dominio
@@ -113,29 +107,39 @@ quantum-circuit-compilation/
 
 ### Publicación en GitHub
 
-`submission/final_submission.zip` (~74 MB, ~910 MB descomprimido) está versionado
-como artefacto de envío. Los circuitos y datasets sueltos (`.kmb`, `.kmx`,
-`.npz`, `.fcidump`), el entorno virtual y la copia local del paper no se
-versionan (`.gitignore`): algunos superan el límite de 100 MiB por archivo de
-GitHub. Cada nuevo commit del ZIP infla el historial; para versiones siguientes
-usa Releases o Git LFS en lugar de versionar el ZIP.
+`submission/submission.zip` (~74 MB, ~910 MB descomprimido) es el artefacto de envío.
+Los circuitos y datasets sueltos (`.kmb`, `.kmx`, `.npz`, `.fcidump`), el entorno
+virtual y la copia local del paper no se versionan (`.gitignore`): algunos superan
+el límite de 100 MiB por archivo de GitHub. Cada nuevo commit del ZIP infla el
+historial; para versiones siguientes usa Releases o Git LFS en lugar de versionar el ZIP.
 
-## Estado actual (2026-10-29)
+**Aviso (2026-11-03):** el `submission.zip` commiteado el 2026-10-30 (commits `61a4985`/`67d4234`,
+PR #17, ~260 KB) **no pasa los verificadores oficiales** (ver CHANGELOG) y sobrescribió al
+zip válido. El último zip válido está en el commit `fb4e95b` (`git show fb4e95b:submission/submission.zip`).
+Antes de enviar a Kaggle, corre los tres verificadores sobre los archivos exactos del zip.
 
-| Tarea | Estado | Métricas | Mejora |
-|-------|--------|----------|--------|
-| invsqrt | **Optimizado con QROM diferencial** + Horner counter | Q=184, T=2,279, score=419,336 | −71.3% vs baseline |
-| dqi | **QROM segmentado 8×512 + multiplexing** | Q=138, T=4,408, score=83,945,952 | 245,000x vs baseline |
-| dfthcsos | **Optimizado completo** (compresión tensorial + QROM) | Q=104, T=279, error 0.586 kcal/mol | 14.7x vs baseline |
 
-**Verificación**: Todos los circuitos pasan fuzz testing kickmix con error < umbrales requeridos.
+## Estado actual (2026-11-03) — solo cifras verificadas con los verificadores oficiales
+
+| Tarea | Circuito | Score / resultado | Verificación |
+|-------|----------|-------------------|--------------|
+| invsqrt | piecewise mitad-dividida, deg=2, j=8, wc=28, dd=13 (`src/invsqrt_halfsplit.py`) | Q=183, T=2,867, **score 570,323** (−72.5 % vs 2,070,562) | PASS dominio completo, 1 tirada/x (3,133,440 tiradas), error peor 0.893 de la tolerancia. **Falta** la corrida de especificación completa (64 tiradas/x) |
+| dqi | `src/dqi_optimized_v10.py` (contadores de 7 bits; Chien+Forney de referencia) | Q=1,888, T=5,708,480, score 100,553,499,141,099 **a 2,560 tiradas** | PASS, 0 errores. Con las 102,400 tiradas por defecto R≈1.19 y el score sería ~2.42×10¹³ |
+| dfthcsos | brot=12, J=8, 10 `angle_k` + `submission.npz` (datos de ejemplo) | Q=730, T=93,237, score 3.36×10⁹ | PASS **solo con el sample**; los datos oficiales de FeMoCo no están en el repo |
+
+Notas:
+- El score de invsqrt es Q × `toffoli_equivalent` (3,116.52), no Q × Toffolis ni Q². Depende del rango de x probado: el mismo circuito da otro número en un subconjunto pequeño.
+- La mejora de DQI viene de los contadores de 7 bits (−1 qubit, −3.5K Toffolis frente a v2). `dqi_optimized_v10.py` importa `galois_iqft` pero **no** lo usa: sigue ejecutando Chien y Forney.
+- Cifras que circularon (invsqrt 419,336; DQI Q=138 / "245,000×"; dfthcsos Q=104, T=279) **no tienen circuito verificable** en el repo y los archivos subidos fallaron los verificadores (ver CHANGELOG, 2026-11-03).
 
 ### Submission ZIP
-- **Archivo:** `submission_final/` (optimizado)
-- **Contiene:** 
-  - `invsqrt.kmb` (QROM diferencial + Horner)
-  - `dqi.kmb` (QROM 8 chunks multiplexado)
-  - `dfthcsos/submission.npz` + `angle_k_0-4.kmb` (compresión tensorial + QROM)
+Contenido esperado de `submission/submission.zip`: `invsqrt.kmb`, `dqi.kmb`, `dfthcsos/angle_k_*.kmx` y `dfthcsos/submission.npz`
+(en la raíz del zip, sin carpeta intermedia). Los circuitos se regeneran con:
+
+```
+python3 src/invsqrt_halfsplit.py --deg 2 --j 8 --wc 28 --dd 13 --out invsqrt.kmb
+python3 src/dqi_optimized_v10.py dqi.kmb --m 4095 --n 70 --degree 12
+```
 
 `QubitTemporalManager` (`src/qubit_temporal_manager.py`) es solo contabilidad
 y no modifica ningún circuito.
@@ -157,29 +161,20 @@ Contiene scripts y plantillas para generar:
 - Verificación automática: el simulador kickmix procesa 64–512 test inputs por instrucción de CPU y maneja circuitos con >100 millones de gates en un solo core.
 - Fiat–Shamir heuristic: los inputs aleatorios y resultados de medición se seeded con un hash criptográfico salteado de tu submission (no hay test set oculto).
 
-## Optimizaciones implementadas
+## Optimizaciones implementadas (verificadas)
 
 ### invsqrt
-- PWSpec optimization (deg=2, j=7, wc=28, dd=13)
-- Horner counter optimization
-- QROM real + diferencial con prefix sums
-- Reuso de registros y scaffold reuse
-- **Resultado**: Score 419,336, Error 0.6913 < 1.0
+- Sin Newton–Raphson: polinomio por tramos (grado 2) con coeficientes cargados por QROM y evaluados con Horner (`src/invsqrt_piecewise.py`).
+- Tabla mitad-dividida: M ∈ [2,4) se lleva a M′ = M/2 con el factor 1/√2 integrado a los coeficientes, y la tabla pasa de 3·2^j a 2^(j+1) entradas (`src/invsqrt_halfsplit.py`).
+- **Resultado**: Q=183, T=2,867, score 570,323, error 0.893 < 1.0.
 
 ### dqi
-- QROM segmentado 8×512 para evitar límites kickmix
-- Multiplexing por bits altos de dirección
-- Chien search con lookup tables
-- EEA forward/reverse con reuso de scaffolds
-- **Resultado**: 138 qubits, 4,408 Toffolis, mejora 245,000x
+- Contadores n_A, n_B, n_a, n_b y n_q de 7 bits (`src/dqi_optimized_v10.py`).
+- **Resultado**: Q=1,888, T=5,708,480 (2,560 tiradas): −0.82 % frente a la referencia.
 
 ### dfthcsos
-- Compresión tensorial (rank 54→32)
-- Reducción de precisión 64→48 bits
-- Árbol Givens optimizado con reordenación
-- QROM para ángulos pre-computados
-- Scaffold reuse
-- **Resultado**: 104 qubits, 279 Toffolis, error 0.586 kcal/mol < 1.0
+- Barrido de `brot` y `batch_size` sobre el circuito de ejemplo; mejor resultado con datos de ejemplo: brot=12, J=8 (`results/dfthcsos_opt2/`). Sin los datos oficiales no hay optimización propia medida.
+
 
 ---
 

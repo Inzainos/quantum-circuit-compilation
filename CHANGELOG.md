@@ -78,7 +78,7 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 
 ## [Unreleased] - 2026-10-29 — DQI v10 (Horner iQFT) + Submission actualizado
 
-### DQI v10 — Horner iQFT reemplaza Chien+Forney
+### DQI v10 — (el nombre "Horner iQFT" no describe el circuito: ver 2026-11-03)
 - `src/dqi_optimized_v10.py` — arquitectura con Horner iQFT: evalúa σ(α^j) secuencialmente, eliminando registros reg_b de Chien (73×12 = 876 qubits).
 - Optimizaciones combinadas: counter 7-bit, active length tracking (b_len), scaffold reuse para divisiones, adjoint cleanup pipeline (reverse EEA).
 - Resultado verificado (2,560 shots): **PASS**
@@ -89,7 +89,7 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 
 ### Submission ZIP actualizado
 - `submission/submission.zip` — ZIP final listo para Kaggle (74 MB comprimido, 915 MB descomprimido)
-  - invsqrt.kmb: piecewise deg=2,j=7,wc=28,dd=13 (Q=185, T=2,993, score=593,733)
+  - invsqrt.kmb: piecewise deg=2,j=7,wc=28,dd=13 (Q=185, T=2,993; score=593,733 medido solo con x ≤ 9,984; 599,866 en el dominio completo — ver 2026-11-03)
   - dqi.kmb: v10 Horner iQFT (Q=1,888, T=5,708,480, score=100.55T)
   - dfthcsos/: 10 angle_k_*.kmx + submission.npz (brot=12,J=8, score=3.36B)
 - Backup anterior: `submission/submission_2026-10-28.zip`
@@ -111,7 +111,33 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 ### Estado actual (2026-10-29)
 | Tarea | Circuito | Score | Mejora vs Baseline |
 |-------|----------|-------|-------------------|
-| invsqrt | piecewise (deg=2,j=7,wc=28,dd=13) | 593,733 | −71.3% |
+| invsqrt | piecewise (deg=2,j=7,wc=28,dd=13) | 599,866 (dominio completo; 593,733 era un subconjunto x ≤ 9,984) | −71.0% |
 | dqi | v10 Horner iQFT | 100.55T | −0.82% |
 | dfthcsos | brot=12,J=8 | 3.36B | PASS |
+
+## [Unreleased] - 2026-11-03 — Correcciones tras verificación oficial
+
+### Added
+- `src/invsqrt_halfsplit.py` + `tests/test_halfsplit.py` (PR #10): tabla mitad-dividida (M ∈ [2,4) → M′ = M/2, factor 1/√2 en los coeficientes; tabla de 2^(j+1) entradas).
+  - deg=2, j=8, wc=28, dd=13: Q=183, T=2,867, toffoli_equivalent 3,116.52, **score 570,323**.
+  - Verificador oficial, dominio completo, 1 tirada/x (3,133,440): **PASS**, error peor 0.893 de la tolerancia, sha256 `47c56f52…c9bf`. Falta la corrida de 64 tiradas/x.
+- `src/dqi_optimized_v10.py` y `src/galois_iqft.py` ya están en el repo (PR #8). `dqi_optimized_v10.py` regenera byte a byte el `dqi.kmb` del zip válido (sha256 `ef1fc095…ba41`).
+
+### Verified
+- dqi (`ef1fc095…`): PASS con 2,560 tiradas, 0 errores, Q=1,888, T=5,708,480, score 100,553,499,141,099 (R=4.94 por el número de tiradas; con 102,400 tiradas por defecto R≈1.19, score ≈ 2.42×10¹³). Nota: en máquinas de 7 GB `reaction_depth()` del verificador falla con `std::bad_alloc`; no afecta al score.
+
+### Fixed / Corregido
+- **invsqrt 593,733 → 599,866.** 593,733 es el score del mismo circuito (Q=185, T=2,993) medido con x ≤ 9,984; el dominio completo da 599,866. El promedio de `toffoli_equivalent` depende del rango de x.
+- **"Horner iQFT" y "−876 qubits".** `dqi_optimized_v10.py` importa `galois_iqft` pero no lo llama; usa Chien+Forney de referencia. La mejora (−0.82 %) viene de los contadores de 7 bits (Q 1,893 → 1,888).
+- **Cifras sin respaldo retiradas del README** (invsqrt Q=184/T=2,279/419,336; DQI Q=138/T=4,408/"245,000×"; dfthcsos Q=104/T=279): ningún circuito del repo las reproduce.
+
+### Incident — zip de envío inválido (PR #17, 2026-10-30)
+- `submission/submission.zip` (~260 KB, commits `61a4985`/`67d4234`) sustituyó al zip válido de 74 MB (`fb4e95b`). Resultados del verificador oficial sobre ese zip:
+  - invsqrt (Q=184, T=2,279): **FAIL** en x=2, error de fase 0.293 vueltas (tolerancia 4.2e-8).
+  - dqi (Q=138, T=4,408): **FAIL**, "Registers must be exactly S0..S{n-1} and E0..E{m-1}" (registros `addr_high`, `addr_low`, `result…`).
+  - dfthcsos: **FAIL**, `submission.npz` con matrices 54×54 en vez de tensores (R, B, N)/(R, B, C); las 5 `angle_k` son el mismo archivo.
+  - Los `.kmb` eran texto (`.kmx`) con extensión equivocada; el contenido empaquetado dentro de `submission/` en vez de la raíz.
+- Contenido del zip válido reconstruido: `invsqrt.kmb` (halfsplit, 570,323), `dqi.kmb` (v10), `dfthcsos/` (10 `angle_k_*.kmx` + `submission.npz`, datos de ejemplo). dfthcsos no se pudo reverificar aquí: falta `FeMoCo76o113e.fixed_shifts.npz`.
+- `quantum_analysis.ipynb` lee archivos de `submission_final/` que no existen y calcula el score de invsqrt como Q²·T (la métrica oficial es Q × toffoli_equivalent).
+- `src/qualtran_bloqs/plan_b_gates.py` declara costos (`TComplexity`) que ningún circuito kickmix usa; no entran al score.
 
