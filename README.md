@@ -141,6 +141,12 @@ python3 src/invsqrt_halfsplit.py --deg 2 --j 8 --wc 28 --dd 13 --out invsqrt.kmb
 python3 src/dqi_optimized_v10.py dqi.kmb --m 4095 --n 70 --degree 12
 ```
 
+Para reconstruir el zip completo (invsqrt + dqi regenerados, `dfthcsos/` tomado del zip válido `fb4e95b`):
+
+```
+python3 submission/rebuild_valid_zip.py salida/submission.zip
+```
+
 `QubitTemporalManager` (`src/qubit_temporal_manager.py`) es solo contabilidad
 y no modifica ningún circuito.
 
