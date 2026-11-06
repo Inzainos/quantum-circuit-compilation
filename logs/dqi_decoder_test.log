@@ -1,0 +1,4 @@
+circuito: 256 posiciones toffoli-like=407950 qubits=2016 build 10.0s
+simulacion 0.2s
+tiros=64 fase incorrecta=0 S no restaurado=0 ancillas sucias=0 (fase=1 en ref: 32)
+RESULTADO: PASA

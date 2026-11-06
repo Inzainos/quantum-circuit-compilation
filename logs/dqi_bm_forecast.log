@@ -1,0 +1,24 @@
+pesos w_k^2: k<=23: 1.846e-03  k=35: 0.028  media k=31.05
+k=14 p=4.254e-09  retain media=0.0 max=0 | replace media=28.0 | ceros media=42.0 | L!=k: 0/6
+k=15 p=2.444e-08  retain media=0.0 max=0 | replace media=30.0 | ceros media=40.0 | L!=k: 0/6
+k=16 p=1.281e-07  retain media=0.0 max=0 | replace media=32.0 | ceros media=38.0 | L!=k: 0/6
+k=17 p=6.137e-07  retain media=0.0 max=0 | replace media=34.0 | ceros media=36.0 | L!=k: 0/6
+k=18 p=2.695e-06  retain media=0.0 max=0 | replace media=36.0 | ceros media=34.0 | L!=k: 0/6
+k=19 p=1.086e-05  retain media=0.0 max=0 | replace media=38.0 | ceros media=32.0 | L!=k: 0/6
+k=20 p=4.020e-05  retain media=0.0 max=0 | replace media=40.0 | ceros media=30.0 | L!=k: 0/6
+k=21 p=1.367e-04  retain media=0.0 max=0 | replace media=42.0 | ceros media=28.0 | L!=k: 0/6
+k=22 p=4.274e-04  retain media=0.0 max=0 | replace media=44.0 | ceros media=26.0 | L!=k: 0/6
+k=23 p=1.227e-03  retain media=0.0 max=0 | replace media=46.0 | ceros media=24.0 | L!=k: 0/6
+k=24 p=3.229e-03  retain media=0.0 max=0 | replace media=48.0 | ceros media=22.0 | L!=k: 0/6
+k=25 p=7.778e-03  retain media=0.0 max=0 | replace media=50.0 | ceros media=20.0 | L!=k: 0/6
+k=26 p=1.709e-02  retain media=0.0 max=0 | replace media=52.0 | ceros media=18.0 | L!=k: 0/6
+k=27 p=3.412e-02  retain media=0.0 max=0 | replace media=54.0 | ceros media=16.0 | L!=k: 0/6
+k=28 p=6.151e-02  retain media=0.0 max=0 | replace media=56.0 | ceros media=14.0 | L!=k: 0/6
+k=29 p=9.928e-02  retain media=0.0 max=0 | replace media=58.0 | ceros media=12.0 | L!=k: 0/6
+k=30 p=1.418e-01  retain media=0.0 max=0 | replace media=60.0 | ceros media=10.0 | L!=k: 0/6
+k=31 p=1.758e-01  retain media=0.0 max=0 | replace media=61.8 | ceros media=8.2 | L!=k: 0/6
+k=32 p=1.839e-01  retain media=0.0 max=0 | replace media=64.0 | ceros media=6.0 | L!=k: 0/6
+k=33 p=1.539e-01  retain media=0.0 max=0 | replace media=66.0 | ceros media=4.0 | L!=k: 0/6
+k=34 p=9.199e-02  retain media=0.0 max=0 | replace media=68.0 | ceros media=2.0 | L!=k: 0/6
+k=35 p=2.767e-02  retain media=0.0 max=0 | replace media=70.0 | ceros media=0.0 | L!=k: 0/6
+PONDERADO: retain=0.00 replace=62.06 ceros=7.94  (rondas totales n=70)

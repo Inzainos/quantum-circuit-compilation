@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reconstruye el zip de envio valido (invsqrt halfsplit + dqi v10 + dfthcsos del zip bueno fb4e95b).
+"""Reconstruye el zip de envio valido (invsqrt logshift2 sesgo 1 + dqi decodificador BM v5 + dfthcsos del zip bueno fb4e95b).
 
 Uso (desde la raiz del repo):
-    python3 submission/rebuild_valid_zip.py salida/submission.zip [--dfthcsos-commit fb4e95b]
+    python3 submission/rebuild_valid_zip.py salida/submission.zip [--dfthcsos-commit fb4e95b | --dfthcsos-zip ruta.zip]
 
 Regenera invsqrt.kmb y dqi.kmb con los scripts del repo, extrae dfthcsos/ del zip
 versionado en --dfthcsos-commit y empaqueta todo en la RAIZ del zip. Imprime el sha256
@@ -44,17 +44,21 @@ def main() -> None:
     ap.add_argument("output", type=Path)
     ap.add_argument("--dfthcsos-commit", default="fb4e95b",
                     help="commit que contiene submission/submission.zip con dfthcsos/ valido")
+    ap.add_argument("--dfthcsos-zip", type=Path, default=None,
+                    help="zip local con dfthcsos/ valido (tiene prioridad sobre --dfthcsos-commit)")
     a = ap.parse_args()
 
     env = {**os.environ, "PYTHONPATH": f"{ROOT / 'verifiers' / 'invsqrt'}:{ROOT / 'src'}"}
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        run([sys.executable, "src/invsqrt_halfsplit.py", "--deg", "2", "--j", "8", "--wc", "28", "--dd", "13",
+        run([sys.executable, "src/invsqrt_logshift2.py", "--deg", "2", "--j", "8", "--wc", "28", "--dd", "13", "--sesgo", "1",
              "--out", str(tmp / "invsqrt.kmb")], env)
-        run([sys.executable, "src/dqi_optimized_v10.py", str(tmp / "dqi.kmb"),
-             "--m", "4095", "--n", "70", "--degree", "12"], env)
-        blob = subprocess.run(["git", "show", f"{a.dfthcsos_commit}:submission/submission.zip"],
-                              cwd=ROOT, check=True, capture_output=True).stdout
+        run([sys.executable, "src/dqi_decoder_v1.py", str(tmp / "dqi.kmb")], env)
+        if a.dfthcsos_zip:
+            blob = a.dfthcsos_zip.read_bytes()
+        else:
+            blob = subprocess.run(["git", "show", f"{a.dfthcsos_commit}:submission/submission.zip"],
+                                  cwd=ROOT, check=True, capture_output=True).stdout
         a.output.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(io.BytesIO(blob)) as old, \
                 zipfile.ZipFile(a.output, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as out:

@@ -1,0 +1,7 @@
+TOTAL toffoli-like estatico: incondicionales=2561  condicionados=0
+--- profundidad 1 (ruta: incond | cond | % del total) ---
+horner                                                                       1484 |         0 |  57.9%
+lookup                                                                        551 |         0 |  21.5%
+denormalize_log                                                               260 |         0 |  10.2%
+normalize_log                                                                 224 |         0 |   8.7%
+giro_mitad                                                                     42 |         0 |   1.6%

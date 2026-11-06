@@ -1,0 +1,3 @@
+IDA: build 0.1s toffoli-like=217767 qubits=3534
+IDA: sigma no proporcional al modelo en 0/256 tiros (sigma_0=0 en 0)  fase volteada=0
+IDA+VUELTA: toffoli-like=435464 qubits=3534  S no restaurado=0  ancillas sucias=0  fase volteada=0
