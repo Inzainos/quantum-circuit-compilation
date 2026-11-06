@@ -18,6 +18,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(_ROOT / "tools"))
+try:
+    from qcc_log import emit as _qcc_emit, phase as _qcc_phase
+    _HAS_QCC_LOG = True
+except Exception:  # noqa: BLE001 - logging opcional; el circuito no depende de el
+    _HAS_QCC_LOG = False
 
 import kickmix as km  # noqa: E402
 from invsqrt_bloqs import Fase  # noqa: E402
@@ -167,6 +175,7 @@ class PipelineLog2(PipelineMitad):
 if __name__ == "__main__":
     import argparse
     import hashlib
+    import time
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
     ap = argparse.ArgumentParser()
@@ -178,8 +187,23 @@ if __name__ == "__main__":
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
     spec = PWSpec(deg=a.deg, j=a.j, wc=a.wc, dd=a.dd)
+    params = {"deg": a.deg, "j": a.j, "wc": a.wc, "dd": a.dd, "sesgo": a.sesgo}
+    t0 = time.time()
     circ = PipelineLog2(spec, a.sesgo).construye()
-    log.info("circuito: Q=%d T=%d", circ.num_qubits, int(circ.operation_statistics().num_toffoli_like))
+    q = int(circ.num_qubits)
+    t_toff = int(circ.operation_statistics().num_toffoli_like)
+    log.info("circuito: Q=%d T=%d", q, t_toff)
+    if _HAS_QCC_LOG:
+        _qcc_emit("invsqrt_logshift2", "build", "ok", inputs=params,
+                  outputs={"Q": q, "T": t_toff},
+                  duration_s=time.time() - t0)
     if a.out:
+        t0 = time.time()
         circ.to_file(str(a.out), format="kmb")
-        log.info("sha256 %s", hashlib.sha256(a.out.read_bytes()).hexdigest())
+        digest = hashlib.sha256(a.out.read_bytes()).hexdigest()
+        log.info("sha256 %s", digest)
+        if _HAS_QCC_LOG:
+            _qcc_emit("invsqrt_logshift2", "write", "ok",
+                      inputs={"out": str(a.out)},
+                      outputs={"sha256": digest, "bytes": a.out.stat().st_size},
+                      duration_s=time.time() - t0)

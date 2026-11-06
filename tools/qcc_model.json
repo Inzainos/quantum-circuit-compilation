@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "kind": "qcc-surrogate-v1",
+  "trained": "2026-11-06",
+  "note": "ESTIMATES ONLY. Every prediction is an estimate from real measured logs; nothing here is a verifier result.",
+  "invsqrt": {
+    "features": [
+      "1",
+      "j",
+      "wc",
+      "dd",
+      "sesgo"
+    ],
+    "models": {
+      "Q": {
+        "coef": [
+          142.0,
+          -1.1003278891205657,
+          2.1579462920040346,
+          1.1003278891205643,
+          0.04236928671139088
+        ],
+        "mu": [
+          8.05,
+          28.6,
+          12.95,
+          1.75
+        ],
+        "sd": [
+          0.8046738469715541,
+          0.4898979485566357,
+          0.8046738469715541,
+          1.3369741957120937
+        ],
+        "lam": 1.0
+      },
+      "T": {
+        "coef": [
+          2749.6500000000005,
+          69.5919186432523,
+          63.54905318657474,
+          -69.59191864325216,
+          -4.760166263012162
+        ],
+        "mu": [
+          8.05,
+          28.6,
+          12.95,
+          1.75
+        ],
+        "sd": [
+          0.8046738469715541,
+          0.4898979485566357,
+          0.8046738469715541,
+          1.3369741957120937
+        ],
+        "lam": 1.0
+      },
+      "max_err": {
+        "coef": [
+          0.648284544902083,
+          -0.006398267161698541,
+          -0.1764042180923588,
+          0.006398267161698526,
+          0.02829089410854433
+        ],
+        "mu": [
+          8.05,
+          28.6,
+          12.95,
+          1.75
+        ],
+        "sd": [
+          0.8046738469715541,
+          0.4898979485566357,
+          0.8046738469715541,
+          1.3369741957120937
+        ],
+        "lam": 1.0
+      }
+    },
+    "validation": {
+      "Q": {
+        "test_n": 4,
+        "mae": 0.22212424357764604,
+        "max_abs_err": 0.35853759478985125,
+        "target_mean": 142.04166666666666,
+        "group_out_mae": 0.5290099103656907,
+        "group_out_max": 0.9191684452076458
+      },
+      "T": {
+        "test_n": 4,
+        "mae": 67.858217482045,
+        "max_abs_err": 96.1198261748068,
+        "target_mean": 2761.9583333333335,
+        "group_out_mae": 134.1240344901241,
+        "group_out_max": 189.62912921235602
+      },
+      "max_err": {
+        "test_n": 4,
+        "mae": 0.035189843255376704,
+        "max_abs_err": 0.05743114783916664,
+        "target_mean": 0.6358404384202307,
+        "group_out_mae": 0.04699778990026551,
+        "group_out_max": 0.1590358829295352
+      }
+    },
+    "score_ratio_toffoli_equiv_over_T": 1.093349165198312,
+    "score_anchors": [
+      {
+        "label": "halfsplit",
+        "score": 570323.0,
+        "Q": 183,
+        "T": 2867,
+        "toffoli_equiv": 3116.52
+      },
+      {
+        "label": "logshift2",
+        "score": 497462.32,
+        "Q": 177,
+        "T": 2561,
+        "toffoli_equiv": 2810.521581920904
+      },
+      {
+        "label": "logshift2_sesgo1",
+        "score": 390005.06,
+        "Q": 139,
+        "T": 2561,
+        "toffoli_equiv": 2805.7917668892883
+      }
+    ],
+    "n": 24
+  },
+  "dfthcsos": {
+    "features": [
+      "1",
+      "log10(rho)",
+      "eps_target",
+      "epoch/100",
+      "solver_is_adam"
+    ],
+    "models": {
+      "lambda_eff": {
+        "coef": [
+          49.09640521937779,
+          -0.1376457246712325,
+          -0.07235247084887919,
+          0.0006966865903550501,
+          0.0
+        ],
+        "mu": [
+          -3.8095238095238093,
+          0.015333333333333341,
+          0.3047619047619048,
+          0.0
+        ],
+        "sd": [
+          0.3926767262493011,
+          0.0029814239699997207,
+          0.31543800307960373,
+          1.0
+        ],
+        "lam": 1.0,
+        "log_target": false
+      },
+      "eps_fro": {
+        "coef": [
+          2.803295915545468,
+          -0.007960139074601122,
+          0.019130296035946993,
+          0.009228954382023593,
+          0.0
+        ],
+        "mu": [
+          -3.8095238095238093,
+          0.015333333333333341,
+          0.3047619047619048,
+          0.0
+        ],
+        "sd": [
+          0.3926767262493011,
+          0.0029814239699997207,
+          0.31543800307960373,
+          1.0
+        ],
+        "lam": 1.0,
+        "log_target": true
+      },
+      "E_gap": {
+        "coef": [
+          3.9331196428571427,
+          -0.022023185547752833,
+          -0.01152066395857547,
+          0.0002957724400702343,
+          0.0
+        ],
+        "mu": [
+          -3.8095238095238093,
+          0.015333333333333341,
+          0.3047619047619048,
+          0.0
+        ],
+        "sd": [
+          0.3926767262493011,
+          0.0029814239699997207,
+          0.31543800307960373,
+          1.0
+        ],
+        "lam": 1.0,
+        "log_target": false
+      }
+    },
+    "validation": {
+      "lambda_eff": {
+        "leave_one_run_out_mae": 0.47494132109857745,
+        "leave_one_run_out_max": 1.997038840238659,
+        "runs": [
+          "lbfgs_65_60_60_ep30",
+          "lbfgs_rho1e-3_eps17_65_60_60_ep300",
+          "lbfgs_rho1e-4_eps17_65_60_60_ep100"
+        ],
+        "n": 21,
+        "target_mean": 49.09640521937779,
+        "excluded_runs": [
+          "diag_20ep"
+        ],
+        "excluded_reason": "Adam lr=1e-4 destroys the seed (measured); different regime, see diag_20ep.log"
+      },
+      "eps_fro": {
+        "leave_one_run_out_mae": 0.6663938737262393,
+        "leave_one_run_out_max": 0.9143742596182811,
+        "runs": [
+          "lbfgs_65_60_60_ep30",
+          "lbfgs_rho1e-3_eps17_65_60_60_ep300",
+          "lbfgs_rho1e-4_eps17_65_60_60_ep100"
+        ],
+        "n": 21,
+        "target_mean": 16.505741863488016,
+        "excluded_runs": [
+          "diag_20ep"
+        ],
+        "excluded_reason": "Adam lr=1e-4 destroys the seed (measured); different regime, see diag_20ep.log"
+      },
+      "E_gap": {
+        "leave_one_run_out_mae": 0.07576001719290522,
+        "leave_one_run_out_max": 0.3207561198985682,
+        "runs": [
+          "lbfgs_65_60_60_ep30",
+          "lbfgs_rho1e-3_eps17_65_60_60_ep300",
+          "lbfgs_rho1e-4_eps17_65_60_60_ep100"
+        ],
+        "n": 21,
+        "target_mean": 3.9331196428571427,
+        "excluded_runs": [
+          "diag_20ep"
+        ],
+        "excluded_reason": "Adam lr=1e-4 destroys the seed (measured); different regime, see diag_20ep.log"
+      }
+    },
+    "shape_models": {
+      "error_2_mHa": {
+        "coef": [
+          19.5462877997125,
+          -0.2540993031869916
+        ],
+        "log_target": true,
+        "n": 3,
+        "note": "3 points, R=B=C collinear: rough ordering only"
+      },
+      "Lambda": {
+        "coef": [
+          7.351845204439229,
+          -0.0256615481141079
+        ],
+        "log_target": true,
+        "n": 3,
+        "note": "3 points, R=B=C collinear: rough ordering only"
+      }
+    },
+    "shape_points": [
+      {
+        "shape": [
+          65,
+          60,
+          60
+        ],
+        "error_2_mHa": 16.1332,
+        "Lambda": 308.448,
+        "lambda_eff": 49.2547,
+        "E_gap": 3.958,
+        "source": "REFIT.md sec 0"
+      },
+      {
+        "shape": [
+          50,
+          50,
+          50
+        ],
+        "error_2_mHa": 1743.6,
+        "Lambda": 383.56,
+        "lambda_eff": 318.57,
+        "E_gap": 169.95,
+        "source": "REFIT.md sec 2.3"
+      },
+      {
+        "shape": [
+          40,
+          40,
+          40
+        ],
+        "error_2_mHa": 8175.4,
+        "Lambda": 600.01,
+        "lambda_eff": 599.44,
+        "E_gap": 626.16,
+        "source": "REFIT.md sec 2.3"
+      }
+    ],
+    "encode_offsets": {
+      "lambda_eff": 0.028444353621580376,
+      "error_2_mHa": 2.3856027220042293,
+      "E_gap": 0.0044771636530640535,
+      "n": 1
+    },
+    "brot_J_table": {
+      "12,4": {
+        "T": 164769.0,
+        "Q": 682
+      },
+      "12,8": {
+        "T": 93237.0,
+        "Q": 730
+      }
+    },
+    "n_traj": 21,
+    "n_traj_all_runs": 24,
+    "regime": "LBFGS fine-tuning only; Adam inputs refused (measured seed destruction, diag_20ep.log)"
+  },
+  "dqi": {
+    "formula": "score = R(failures, shots) * Q^2 * mean_toffoli; R from Clopper-Pearson upper bound (1-2^-128) + repetition_overhead, same math as verifiers/dqi/verify_submission_dqi.py",
+    "anchors": [
+      {
+        "label": "v10",
+        "T": 5708480,
+        "Q": 1888,
+        "shots": 2560,
+        "failures": 0,
+        "score": 100553495728240.39,
+        "eps_plus": 0.03406367107515445,
+        "R": 4.941658272957928,
+        "recorded_score": 100553499141099.0,
+        "rel_error_vs_recorded": -3.3940724475296455e-08
+      },
+      {
+        "label": "bm_v1_0fail",
+        "T": 784172,
+        "Q": 2016,
+        "shots": 102400,
+        "failures": 0,
+        "score": 3796637346520.408,
+        "eps_plus": 0.0008660587301657926,
+        "R": 1.1912604648115832,
+        "recorded_score": null
+      },
+      {
+        "label": "bm_v1_2fail",
+        "T": 784172,
+        "Q": 2016,
+        "shots": 102400,
+        "failures": 2,
+        "score": 3828914760503.265,
+        "eps_plus": 0.0009488155716079551,
+        "R": 1.2013880602795501,
+        "recorded_score": null
+      }
+    ],
+    "n_iters_table": [
+      {
+        "n_iters": 222,
+        "failures": 0,
+        "shots": 2560,
+        "T": 5708480
+      },
+      {
+        "n_iters": 218,
+        "failures": 2,
+        "shots": 10240,
+        "T": 5631100
+      },
+      {
+        "n_iters": 216,
+        "failures": 5,
+        "shots": 10240,
+        "T": 5592408
+      },
+      {
+        "n_iters": 214,
+        "failures": 5073,
+        "shots": 10240,
+        "T": null
+      }
+    ],
+    "note": "No fitted regressor: only 2 decoder points exist. The model converts (T, Q, shots, failures) into a score estimate; it cannot predict T/Q for a new decoder."
+  }
+}
