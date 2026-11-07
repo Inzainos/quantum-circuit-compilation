@@ -53,7 +53,7 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
     apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
     # Reutilizar registros entre posiciones para reducir overhead de alloc/free
     s = b.alloc_qubits(DEG); u = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
-    t = b.alloc_qubits(DEG); f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(DEG)
+    t = b.alloc_qubits(DEG); f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(1)[0]   # un solo qubit para el AND de fase (se usa de a uno)
     for p in positions:
         r = _alpha_pow_bits(-p)
         with b.mark('scan_pos'):
@@ -86,7 +86,7 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
                         b.cx(km.array(srcs), km.array([t[a]] * len(srcs)))
                 b.pop_condition()
             for a in range(DEG):
-                b.init_and(f, u[a], g[a]); b.cz(g[a], t[a]); b.del_and(f, u[a], g[a])
+                b.init_and(f, u[a], g); b.cz(g, t[a]); b.del_and(f, u[a], g)
             for k in reversed(range(DEG)):
                 b.push_condition(E[p][k])
                 for a in reversed(range(DEG)):
@@ -107,9 +107,9 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
             b.del_and(s[0], s[1], lad[0])
             b.x(s)
             _emit_linear(b, src_s, s)
-    for q in (s, u, dd, w, t, lad, g):
+    for q in (s, u, dd, w, t, lad):
         b.free(q)
-    b.free(f)
+    b.free(f); b.free(g)
 
 
 def build_omega_tmp(b, field, sig, S, LO, adjoint):

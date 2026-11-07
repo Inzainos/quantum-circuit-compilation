@@ -36,3 +36,24 @@ Cada fallo cuesta ≈0.45 % de R a N=102,400; con 2.9 % de fallos R se dispara. 
   Toffoli (presupuesto: 7.6 Toffoli por posición por cada 40 qubits ahorrados).
 - Los repos públicos reportan Q≈892 con T≈407k (no verificado): sugiere un esquema que
   reutiliza S en el sitio (≈840 de entrada + ≈50 de ancillas).
+
+## Cambios aplicados (2026-11-07, tarde)
+- Barrido: el registro `g` del AND de fase pasa de 12 a 1 qubit (se usaba de a uno). Q 2,016 → **2,009**,
+  Toffoli iguales (784,172). Verificado: `dqi_decoder_test` 4,095 posiciones PASA; muestreo 102,400 tiros
+  semilla 1: 0 fallos. Nuevo sha del dqi.kmb: `8d6915efe4450025d149a8347931998ffd223b7b59318a05882354b0d5b0acfe`.
+  (Efecto en score: −0.7 %.) La zip final NO se ha reconstruido con este cambio.
+
+## Medición del pico del BM (por ronda, 143 qubits temporales + 2 por bandera acumulada)
+Pico por paso (ronda 1, sin banderas previas): alloc p,t,D,X → _disc +29 → _flags +38 → inversión
+(tower) **+131** → alpha+swap +140 → update **+143**. La torre de inversión retiene 81 qubits desde
+`_inv_init` hasta `_inv_del` (a través de swap y update). Deshacerla antes (recomputar al final)
+bajaría el pico a 131 pero cuesta +75 Toffoli por ronda y sentido (≈+10.5k, +1.3 %) contra −12
+qubits (−1.2 %): neutro. Asignar `alpha` después de la inversión no cambia el pico (se mueve al update).
+
+## Palanca grande (no implementada): EEA/BM en el sitio
+σ y τ (864 qubits) viven aparte de S (840). Con normalización σ0=1 el par (σ1..σ35, ω0..ω34) tiene
+70 símbolos = los 70 de S: es una biyección sobre los síndromes corregibles. Un algoritmo en el sitio
+(EEA sincronizado con grados complementarios, como en los decodificadores sistólicos) llevaría S→(σ,ω)
+sin registros aparte; quedarían solo banderas (~140) y temporales (~150): Q≈1,150 en vez de 2,009,
+es decir (2009/1150)² ≈ 3× en el componente DQI (≈1.45× en la media geométrica final).
+Es un rediseño, no un parche.
