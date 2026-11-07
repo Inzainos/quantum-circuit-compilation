@@ -139,6 +139,31 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 - DQI v7 BM decoder reemplaza al DQI v10 EEA/QROM de 5.7M Toffoli. Score mejora significativa en Q×T.
 - Próximo objetivo: descomputación por medición en scan_pos para pasar de 98 → ~23 Toffoli/posición, ahorro ~41k Toffoli.
 
+## [Unreleased] - 2026-11-07 — Entrega final validada: BM v7 + QROM evaluada + Submission final
+
+### Added
+- `docs/INVERSION_QROM_ANALYSIS.md` — Análisis completo QROM para inversión GF(2¹²): descartada para permutaciones (sin sharing en árbol one-hot).
+- `docs/ESTADO_FINAL_2026-11-07.md` — Documentación completa del estado final de la entrega.
+- `submission/submission_final.zip` (59 MB) — Artefacto de envío validado con estructura raíz correcta.
+
+### Changed
+- **DQI decoder:** BM v7 (784,172 Toffoli, Q=2016) confirmado como entrega óptima para métrica estática.
+- **QROM descartada:** `inv8_qrom` 6 Toffoli vs 3 nativos (ANF) = 2× peor; `inv64_qrom` 62 vs 21 = 3× peor. TowerInv2 (75 Toffoli) near-optimal.
+- **Ejecución condicional evaluada:** `push_condition(f)` no reduce Toffoli estático (kickmix compila ambas ramas). Documentado en `PLAN_SCAN_OPT_MBU.md`.
+- **invsqrt:** Log-shift2 Q=139 T=2561 (vs piecewise Q=185 T=2993) - trade-off qubits vs Toffoli.
+- **ZIP final:** Reconstruido con `rebuild_valid_zip.py` usando BM v7 + log-shift2 + dfthcsos fb4e95b.
+
+### Verified
+- `pytest tests/` → **33 passed**
+- `kmx_profile` estático DQI: 784,172 Toffoli (scan_pos 51.2%, bm_update 19.25%, bm_disc 9.15%)
+- invsqrt: Q=139 T=2561 | dfthcsos: 10 angle_k Q=119 T=3974
+- Verificadores kickmix: error < 1.0 en todos los benchmarks
+
+### Notes
+- **Score esperado:** Media geométrica de mejoras. DQI BM v7 (784k) vs reference EEA (5.7M) = mejora significativa en Q×T.
+- Optimizaciones pendientes (no bloqueantes): compartir scaffolding TowerInv, precomputar pw/src fuera del bucle, circuitos dinámicos para branching genuino.
+- Submission listo para envío a Kaggle.
+
 ## [Unreleased] - 2026-11-03 — Correcciones tras verificación oficial
 
 ### Added
