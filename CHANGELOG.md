@@ -115,6 +115,55 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 | dqi | v10 Horner iQFT | 100.55T | −0.82% |
 | dfthcsos | brot=12,J=8 | 3.36B | PASS |
 
+## [Unreleased] - 2026-11-06 — DQI BM v7 + optimización scan + ZIP reconstruido
+
+### Added
+- `docs/OPTIMIZACION_DQI_SCAN.md` — Documentación de hot-spots, reutilización de registros y roadmap de descomputación por medición.
+- Reutilización de registros en `src/dqi_decoder_v1.py` `build_scan_inv`: alloc único de `s,u,dd,w,t,f,lad,g` fuera del bucle de posiciones, free al final. Commit 49ca352.
+
+### Changed
+- `submission/submission.zip` reconstruido con `submission/rebuild_valid_zip.py`:
+  - `invsqrt.kmb` generado por `src/invsqrt_logshift2.py --deg 2 --j 8 --wc 28 --dd 13 --sesgo 1` → Q=139, T=2561, sha256 7e842bbf...
+  - `dqi.kmb` generado por `src/dqi_decoder_v1.py` → Toffoli=784172, qubits=2016, sha256 2b9eb49f...
+  - `dfthcsos/` extraído de commit fb4e95b (10 angle_k_*.kmx + submission.npz)
+  - ZIP tamaño ~57 MB, estructura raíz válida.
+
+### Verified
+- kmx_profile estático sobre `dqi.kmb`:
+  - TOTAL toffoli-like incondicionales = 784172
+  - scan_pos 401310 51.2%, bm_update 150984 19.25%, bm_disc 71766 9.15%, omega_fwd/rev 42315 5.4%
+  - Toffoli/posición ≈ 98
+- invsqrt profile: TOTAL 2561 toffoli-like, Q=139
+
+### Notes
+- DQI v7 BM decoder reemplaza al DQI v10 EEA/QROM de 5.7M Toffoli. Score mejora significativa en Q×T.
+- Próximo objetivo: descomputación por medición en scan_pos para pasar de 98 → ~23 Toffoli/posición, ahorro ~41k Toffoli.
+
+## [Unreleased] - 2026-11-07 — Entrega final validada: BM v7 + QROM evaluada + Submission final
+
+### Added
+- `docs/INVERSION_QROM_ANALYSIS.md` — Análisis completo QROM para inversión GF(2¹²): descartada para permutaciones (sin sharing en árbol one-hot).
+- `docs/ESTADO_FINAL_2026-11-07.md` — Documentación completa del estado final de la entrega.
+- `submission/submission_final.zip` (59 MB) — Artefacto de envío validado con estructura raíz correcta.
+
+### Changed
+- **DQI decoder:** BM v7 (784,172 Toffoli, Q=2016) confirmado como entrega óptima para métrica estática.
+- **QROM descartada:** `inv8_qrom` 6 Toffoli vs 3 nativos (ANF) = 2× peor; `inv64_qrom` 62 vs 21 = 3× peor. TowerInv2 (75 Toffoli) near-optimal.
+- **Ejecución condicional evaluada:** `push_condition(f)` no reduce Toffoli estático (kickmix compila ambas ramas). Documentado en `PLAN_SCAN_OPT_MBU.md`.
+- **invsqrt:** Log-shift2 Q=139 T=2561 (vs piecewise Q=185 T=2993) - trade-off qubits vs Toffoli.
+- **ZIP final:** Reconstruido con `rebuild_valid_zip.py` usando BM v7 + log-shift2 + dfthcsos fb4e95b.
+
+### Verified
+- `pytest tests/` → **33 passed**
+- `kmx_profile` estático DQI: 784,172 Toffoli (scan_pos 51.2%, bm_update 19.25%, bm_disc 9.15%)
+- invsqrt: Q=139 T=2561 | dfthcsos: 10 angle_k Q=119 T=3974
+- Verificadores kickmix: error < 1.0 en todos los benchmarks
+
+### Notes
+- **Score esperado:** Media geométrica de mejoras. DQI BM v7 (784k) vs reference EEA (5.7M) = mejora significativa en Q×T.
+- Optimizaciones pendientes (no bloqueantes): compartir scaffolding TowerInv, precomputar pw/src fuera del bucle, circuitos dinámicos para branching genuino.
+- Submission listo para envío a Kaggle.
+
 ## [Unreleased] - 2026-11-03 — Correcciones tras verificación oficial
 
 ### Added
