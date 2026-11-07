@@ -1,0 +1,5 @@
+circuito: 4095 posiciones, toffoli-like=94185 (esperado 94185), qubits=1343, build 35.9s
+simulacion 0.6s
+tiros=256  fase incorrecta=0  registros no restaurados=0  ancillas sucias=0  (fase=1 en ref: 140)
+Toffolis por tiro (medio, simulador)=94185.0
+RESULTADO: PASA
