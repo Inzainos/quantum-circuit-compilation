@@ -134,6 +134,14 @@ def build_stage_a(LS: int = 36, LO: int = 35, LP: int = 35, m: int = 4095, posit
 
 
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     c = build_stage_a(positions=range(8))
     st = c.operation_statistics()

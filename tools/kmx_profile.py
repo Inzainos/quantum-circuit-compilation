@@ -44,6 +44,19 @@ def main():
         out = collections.Counter()
         for k, v in cnt.items(): out[k[:prof]] += v      # inclusivo hasta la profundidad pedida
         return out
+    try:  # radiografia por etapa -> logs estructurados (un evento por profundidad)
+        sys.path.insert(0, str(ROOT / "tools"))
+        from qcc_log import emit as _qe
+        for _p in range(1, a.profundidad + 1):
+            _i = agrega(incond, _p); _c = agrega(cond, _p)
+            _tot = max(1, total_i + total_c)
+            _qe("kmx_profile", f"profundidad_{_p}", "ok", inputs={"circuito": a.circuito},
+                outputs={"total_incond": total_i, "total_cond": total_c,
+                         "rutas": {"/".join(k) or "(sin etiqueta)": {"incond": _i[k], "cond": _c[k],
+                                   "pct": round(100.0 * (_i[k] + _c[k]) / _tot, 2)}
+                                   for k in sorted(set(_i) | set(_c), key=lambda k: -(_i[k] + _c[k]))[: a.top]}})
+    except Exception:  # noqa: BLE001
+        pass
     for prof in range(1, a.profundidad + 1):
         inc = agrega(incond, prof); con = agrega(cond, prof)
         claves = sorted(set(inc) | set(con), key=lambda k: -(inc[k] + con[k]))[: a.top]
@@ -52,4 +65,12 @@ def main():
             log.info("%-70s %10d | %9d | %5.1f%%", "/".join(k) or "(sin etiqueta)", inc[k], con[k],
                      100.0 * (inc[k] + con[k]) / max(1, total_i + total_c))
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
     main()

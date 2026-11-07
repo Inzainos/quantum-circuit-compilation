@@ -80,4 +80,12 @@ def main():
     log.info("IDA+VUELTA: toffoli-like=%d qubits=%d  S no restaurado=%d  ancillas sucias=%d  fase volteada=%d",
              c2.operation_statistics().num_toffoli_like, c2.num_qubits, rest, sucio, int(sim2.read_phase_flipped_across_shots().sum()))
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
     main()

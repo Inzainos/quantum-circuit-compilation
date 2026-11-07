@@ -131,3 +131,16 @@ python tools/qcc_model.py info
    en texto libre; el entrenador del kit los imprime y el parser de
    `qcc_model_train.py` los extrae con regex. Si el driver emitiera
    un evento por época, el dataset sería exacto en vez de parseado.
+
+## 7. Instrumentación automática de todos los scripts (2026-11-06 noche)
+
+`tools/qcc_log.auto(__file__)`: una línea al inicio del bloque `__main__` de
+CADA script en `src/` y `tools/` (62 scripts). Emite `start` con argv y, al
+salir (atexit), `ok`/`error` con duración, memoria pico y las últimas 25 líneas
+de log. No cambia ningún circuito. `tools/kmx_profile.py` además emite un
+evento por profundidad con Toffoli por etapa (`rutas`), para ver dónde se gasta
+el costo del DQI completo:
+
+    python3.13 tools/kmx_profile.py dqi.kmb --profundidad 3   # genera varios GB de .kmx temporal
+
+Log: `~/workspace/qcc-data/logs/qcc.jsonl` (`QCC_LOG_PATH` lo cambia).
