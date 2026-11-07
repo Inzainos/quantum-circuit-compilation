@@ -14,6 +14,13 @@ import sys, logging
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
+try:
+    from qcc_log import emit as _qcc_emit
+    _HAS_QCC_LOG = True
+except Exception:  # noqa: BLE001 - logging opcional; el circuito no depende de el
+    _HAS_QCC_LOG = False
 import kickmix as km
 import dqi_bm_model as G
 from dqi_bm_stage_v1 import BMStageV1
@@ -144,11 +151,45 @@ def build_decoder(n=70, LS=36, LO=35, m=4095, positions=None, ida_y_vuelta=True)
 
 
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
+    import hashlib
+    import time
+
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     if len(sys.argv) > 1:
+        t0 = time.time()
         c, _ = build_decoder()
-        c.to_file(sys.argv[1], format="kmb")
-        log.info("escrito %s: toffoli=%d qubits=%d", sys.argv[1], c.operation_statistics().num_toffoli_like, c.num_qubits)
+        out = Path(sys.argv[1])
+        c.to_file(str(out), format="kmb")
+        toff = int(c.operation_statistics().num_toffoli_like)
+        q = int(c.num_qubits)
+        log.info("escrito %s: toffoli=%d qubits=%d", out, toff, q)
+        if _HAS_QCC_LOG:
+            _qcc_emit("dqi_decoder_v1", "build", "ok",
+                      inputs={"n": 70, "LS": 36, "LO": 35, "m": 4095,
+                              "positions": "all", "ida_y_vuelta": True},
+                      outputs={"toffoli": toff, "qubits": q},
+                      duration_s=time.time() - t0)
+            _qcc_emit("dqi_decoder_v1", "write", "ok",
+                      inputs={"out": str(out)},
+                      outputs={"sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+                               "bytes": out.stat().st_size})
     else:
+        t0 = time.time()
         c, _ = build_decoder(positions=range(16))
-        log.info("16 posiciones: toffoli=%d qubits=%d", c.operation_statistics().num_toffoli_like, c.num_qubits)
+        toff = int(c.operation_statistics().num_toffoli_like)
+        q = int(c.num_qubits)
+        log.info("16 posiciones: toffoli=%d qubits=%d", toff, q)
+        if _HAS_QCC_LOG:
+            _qcc_emit("dqi_decoder_v1", "build", "ok",
+                      inputs={"n": 70, "LS": 36, "LO": 35, "m": 4095,
+                              "positions": "0..15", "ida_y_vuelta": True},
+                      outputs={"toffoli": toff, "qubits": q},
+                      duration_s=time.time() - t0)

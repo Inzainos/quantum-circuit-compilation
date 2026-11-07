@@ -80,4 +80,12 @@ def main():
     log.info("RESULTADO: %s", "PASA" if (mal_fase == 0 and mal_reg == 0 and mal_anc == 0) else "FALLA")
 
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
     main()

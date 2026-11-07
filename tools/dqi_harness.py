@@ -50,6 +50,14 @@ def corre(circuit: km.Circuit, shots: int, seed: int, batch: int = 256, m=4095, 
 
 
 if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     ap = argparse.ArgumentParser()
     ap.add_argument("circuit"); ap.add_argument("--shots", type=int, default=2560)

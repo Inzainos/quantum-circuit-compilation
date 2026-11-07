@@ -22,6 +22,13 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
+try:
+    from qcc_log import emit as _qcc_emit
+    _HAS_QCC_LOG = True
+except Exception:  # noqa: BLE001 - logging opcional; el zip no depende de el
+    _HAS_QCC_LOG = False
 log = logging.getLogger("rebuild_valid_zip")
 
 
@@ -49,17 +56,37 @@ def main() -> None:
     a = ap.parse_args()
 
     env = {**os.environ, "PYTHONPATH": f"{ROOT / 'verifiers' / 'invsqrt'}:{ROOT / 'src'}"}
+    import time as _time
+    if _HAS_QCC_LOG:
+        _qcc_emit("rebuild_valid_zip", "start", "ok",
+                  inputs={"output": str(a.output),
+                          "dfthcsos_zip": str(a.dfthcsos_zip) if a.dfthcsos_zip else None,
+                          "dfthcsos_commit": a.dfthcsos_commit,
+                          "tmpdir": os.environ.get("TMPDIR", "/tmp")})
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
+        t0 = _time.time()
         run([sys.executable, "src/invsqrt_logshift2.py", "--deg", "2", "--j", "8", "--wc", "28", "--dd", "13", "--sesgo", "1",
              "--out", str(tmp / "invsqrt.kmb")], env)
+        if _HAS_QCC_LOG:
+            _qcc_emit("rebuild_valid_zip", "invsqrt_build", "ok",
+                      outputs={"sha256": sha256(tmp / "invsqrt.kmb"),
+                               "bytes": (tmp / "invsqrt.kmb").stat().st_size},
+                      duration_s=_time.time() - t0)
+        t0 = _time.time()
         run([sys.executable, "src/dqi_decoder_v1.py", str(tmp / "dqi.kmb")], env)
+        if _HAS_QCC_LOG:
+            _qcc_emit("rebuild_valid_zip", "dqi_build", "ok",
+                      outputs={"sha256": sha256(tmp / "dqi.kmb"),
+                               "bytes": (tmp / "dqi.kmb").stat().st_size},
+                      duration_s=_time.time() - t0)
         if a.dfthcsos_zip:
             blob = a.dfthcsos_zip.read_bytes()
         else:
             blob = subprocess.run(["git", "show", f"{a.dfthcsos_commit}:submission/submission.zip"],
                                   cwd=ROOT, check=True, capture_output=True).stdout
         a.output.parent.mkdir(parents=True, exist_ok=True)
+        dfthcsos_files = []
         with zipfile.ZipFile(io.BytesIO(blob)) as old, \
                 zipfile.ZipFile(a.output, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as out:
             for name in ("invsqrt.kmb", "dqi.kmb"):
@@ -70,7 +97,16 @@ def main() -> None:
                     data = old.read(info.filename)
                     out.writestr(info.filename, data)
                     log.info("%s sha256=%s", info.filename, hashlib.sha256(data).hexdigest())
+                    dfthcsos_files.append({"file": info.filename,
+                                           "sha256": hashlib.sha256(data).hexdigest(),
+                                           "bytes": len(data)})
     log.info("escrito %s (%d bytes)", a.output, a.output.stat().st_size)
+    if _HAS_QCC_LOG:
+        _qcc_emit("rebuild_valid_zip", "zip_write", "ok",
+                  inputs={"output": str(a.output)},
+                  outputs={"sha256": sha256(a.output),
+                           "bytes": a.output.stat().st_size,
+                           "dfthcsos_files": dfthcsos_files})
 
 
 if __name__ == "__main__":
