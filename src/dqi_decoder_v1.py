@@ -51,17 +51,17 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
     n_pos = len(E)
     positions = range(min(n_pos, G.Q - 1)) if positions is None else positions
     apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
+    # Reutilizar registros entre posiciones para reducir overhead de alloc/free
+    s = b.alloc_qubits(DEG); u = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
+    t = b.alloc_qubits(DEG); f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(DEG)
     for p in positions:
         r = _alpha_pow_bits(-p)
         with b.mark('scan_pos'):
-            s = b.alloc_qubits(DEG); u = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
-            t = b.alloc_qubits(DEG); f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(DEG)
             pw = [1]
             for i in range(1, max(len(sig), len(om))):
                 pw.append(G.mul(pw[-1], r))
             src_s = _linear_sources(pw[:len(sig)], sig)
             src_u = _linear_sources(pw[:len(om)], om)
-            # sigma'(r) = sum_{i impar} sigma_i r^{i-1}
             dco = [pw[i - 1] if i % 2 == 1 else 0 for i in range(len(sig))]
             src_d = _linear_sources(dco, sig)
             if tower:
@@ -107,9 +107,9 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
             b.del_and(s[0], s[1], lad[0])
             b.x(s)
             _emit_linear(b, src_s, s)
-            for q in (s, u, dd, w, t, lad, g):
-                b.free(q)
-            b.free(f)
+    for q in (s, u, dd, w, t, lad, g):
+        b.free(q)
+    b.free(f)
 
 
 def build_omega_tmp(b, field, sig, S, LO, adjoint):
