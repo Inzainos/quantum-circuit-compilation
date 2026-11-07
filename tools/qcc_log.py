@@ -165,9 +165,17 @@ def auto(script_path: str, phase_name: str = "run") -> None:
         t0 = time.time()
         tail = _TailHandler()
         tail.setFormatter(logging.Formatter("%(name)s: %(message)s"))
-        logging.getLogger().addHandler(tail)
-        if logging.getLogger().level in (logging.NOTSET, logging.WARNING):
-            logging.getLogger().setLevel(logging.INFO)
+        # OJO: no añadir el handler al logger raíz aquí: con handlers presentes,
+        # logging.basicConfig() de cada script pasa a ser un no-op y se pierden
+        # la consola y los logs de archivo. Se engancha DESPUÉS de basicConfig.
+        _orig_basic = logging.basicConfig
+
+        def _basic(*args, **kwargs):
+            _orig_basic(*args, **kwargs)
+            if tail not in logging.getLogger().handlers:
+                logging.getLogger().addHandler(tail)
+
+        logging.basicConfig = _basic
         state = {"exc": None}
         prev_hook = sys.excepthook
 

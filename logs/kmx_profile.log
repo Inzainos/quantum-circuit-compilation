@@ -1,7 +1,31 @@
-TOTAL toffoli-like estatico: incondicionales=2561  condicionados=0
+TOTAL toffoli-like estatico: incondicionales=395406  condicionados=0
+qcc kmx_profile/profundidad_1 ok {"total_incond": 395406, "total_cond": 0, "rutas": {"bm_update": {"incond": 150984, "cond": 0, "pct": 38.18}, "bm_disc": {"incond": 71766, "cond": 0, "pct": 18.15}, "omega_fwd": {"incond": 42315, "cond": 0, "pct": 10.7}, "omega_rev": {"incond": 42315, "cond": 0, "pct": 10.7}, "bm_swap": {"incond": 33552, "cond": 0, "pct": 8.49}, "bm_alpha": {"incond": 22680, "cond": 0, "pct": 5.74}, "bm_dclear": {
+qcc kmx_profile/profundidad_2 ok {"total_incond": 395406, "total_cond": 0, "rutas": {"bm_update": {"incond": 150984, "cond": 0, "pct": 38.18}, "bm_disc": {"incond": 71766, "cond": 0, "pct": 18.15}, "omega_fwd/gf_mul": {"incond": 39690, "cond": 0, "pct": 10.04}, "omega_rev/gf_mul": {"incond": 39690, "cond": 0, "pct": 10.04}, "bm_swap": {"incond": 33552, "cond": 0, "pct": 8.49}, "bm_alpha": {"incond": 13860, "cond": 0, "pct": 3.51}
 --- profundidad 1 (ruta: incond | cond | % del total) ---
-horner                                                                       1484 |         0 |  57.9%
-lookup                                                                        551 |         0 |  21.5%
-denormalize_log                                                               260 |         0 |  10.2%
-normalize_log                                                                 224 |         0 |   8.7%
-giro_mitad                                                                     42 |         0 |   1.6%
+bm_update                                                                  150984 |         0 |  38.2%
+bm_disc                                                                     71766 |         0 |  18.1%
+omega_fwd                                                                   42315 |         0 |  10.7%
+omega_rev                                                                   42315 |         0 |  10.7%
+bm_swap                                                                     33552 |         0 |   8.5%
+bm_alpha                                                                    22680 |         0 |   5.7%
+bm_dclear                                                                   13860 |         0 |   3.5%
+scan_pos                                                                    12544 |         0 |   3.2%
+bm_d                                                                         2100 |         0 |   0.5%
+bm_x                                                                         1680 |         0 |   0.4%
+bm_flags                                                                     1610 |         0 |   0.4%
+--- profundidad 2 (ruta: incond | cond | % del total) ---
+bm_update                                                                  150984 |         0 |  38.2%
+bm_disc                                                                     71766 |         0 |  18.1%
+omega_fwd/gf_mul                                                            39690 |         0 |  10.0%
+omega_rev/gf_mul                                                            39690 |         0 |  10.0%
+bm_swap                                                                     33552 |         0 |   8.5%
+bm_alpha                                                                    13860 |         0 |   3.5%
+bm_dclear                                                                   13860 |         0 |   3.5%
+scan_pos                                                                    12544 |         0 |   3.2%
+bm_alpha/gf_mul                                                              8820 |         0 |   2.2%
+omega_fwd                                                                    2625 |         0 |   0.7%
+omega_rev                                                                    2625 |         0 |   0.7%
+bm_x                                                                         1680 |         0 |   0.4%
+bm_flags                                                                     1610 |         0 |   0.4%
+bm_d/c_iadd_classical                                                         630 |         0 |   0.2%
+qcc kmx_profile/run ok {"peak_rss_mb": 92.4, "log_tail": ["kmx_profile: bm_disc                                                                     71766 |         0 |  18.1%", "kmx_profile: omega_fwd                                                                   42315 |         0 |  10.7%", "kmx_profile: omega_rev                                                                   42315 |         0 |  10.7%", "kmx_pro
