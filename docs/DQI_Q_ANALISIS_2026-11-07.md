@@ -57,3 +57,23 @@ qubits (−1.2 %): neutro. Asignar `alpha` después de la inversión no cambia e
 sin registros aparte; quedarían solo banderas (~140) y temporales (~150): Q≈1,150 en vez de 2,009,
 es decir (2009/1150)² ≈ 3× en el componente DQI (≈1.45× en la media geométrica final).
 Es un rediseño, no un parche.
+
+
+## Torre de inversión sin copias (dqi_tower_inv3) y barrido sin t/u — Q 2,009 → 1,949 (mismos 784,172 Toffoli)
+Idea (de Capitán): "arquitectura donde los registros fluyan y se cierren sin acumularse". Cambios, todos con 0 Toffoli extra:
+- `src/dqi_tower_inv3.py`: N se calcula directo (sin Pn); cambios de base P2C/C2P EN EL SITIO con redes de CX
+  (`inplace_ops`); s = a0^a1 se forma temporalmente sobre a0; los productos o0/o1 se acumulan directo en la salida w
+  (vía WCOLS) y w se limpia con una sola medición X. El ValueInv3 además cambia a coordenadas en el sitio (sin `ac`).
+  Qubits auxiliares de la inversión: 81 → **21**. Autoprueba: 4,096/4,096, 75 Toffoli, sin basura ni fase
+  (`tests/test_tower_inv3.py`).
+- Barrido: se eliminan los registros `t` y `u` (24 qubits): u_a se forma en un único qubit y la fase se aplica con
+  CZ(g_a, w_b) condicionados a E[p][k] (misma fase, menos CX).
+- Resultado: Q 2,009 → 1,949; el pico lo fija ahora el BM (≈85 temporales por ronda), el barrido queda en 1,934.
+- Verificación: `dqi_decoder_test` 4,095 posiciones PASA; muestreo 102,400 tiros: semilla 1 → 0 fallos,
+  semilla 7 → 2 fallos (mismo conteo que el circuito anterior con esa semilla). dqi.kmb nuevo: sha `6108f5c344b995221f3cf57cd357a1742051031cc89929d0ae055a7bb5233dfb`.
+- Efecto en score DQI: (2016/1949)² = 1.070× (−6.5 % de costo).
+
+## Nota: por qué no hay "smart scan" por posición
+En el verificador (`verify_submission_dqi.py`, líneas ~248-256) los bits clásicos E son resultados de medición
+UNIFORMES (mbuc ∈ [0,4095] en las 4,095 posiciones), no el patrón de error disperso; y T es la MEDIA de Toffoli
+ejecutados por tiro. Todas las posiciones están activas, así que no se puede saltar ninguna por E[p]=0.

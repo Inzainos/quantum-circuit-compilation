@@ -207,3 +207,10 @@ sha256sum submission/final_submission.zip
   - `dfthcsos/`: candidato refit de Mole (sin cambios respecto a la zip anterior).
 - El archivo se llama `final_submission.zip` (no `submission_final.zip`).
 - Se eliminó `submission/submission.zip` (261 KB): era el zip inválido de la PR #17.
+
+
+### Actualización (tarde del 2026-11-07): dqi con Q=1,949
+`final_submission.zip` se reconstruyó con la torre sin copias (`src/dqi_tower_inv3.py`): `dqi.kmb` sha
+`6108f5c344b995221f3cf57cd357a1742051031cc89929d0ae055a7bb5233dfb` (784,172 Toffoli, **Q=1,949**; antes 2,016).
+`invsqrt.kmb` y `dfthcsos/` sin cambios. Pruebas: 4,095 posiciones PASA; 102,400 tiros semilla 1: 0 fallos,
+semilla 7: 2 fallos. Ver `docs/DQI_Q_ANALISIS_2026-11-07.md`.
