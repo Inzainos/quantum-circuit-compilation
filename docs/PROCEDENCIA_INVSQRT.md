@@ -9,7 +9,7 @@ Los datos de V34 los aportó el otro agente del equipo; este documento recoge lo
 - Notebook público de origen: "Quantum Circuits | 24.65 Local GM: Chem Refit", versión 36, score público 24.65393, autor SomeJoint.
 - Licencia del notebook (texto de su página): "This Notebook has been released under the Apache 2.0 open source license." (aprobada por la OSI).
 - Archivo del circuito V34 (sha256 `af469847…`): dataset **"QCC ladder parts"** de SomeJoint, subcarpeta `invsqrt-af469847`. (El slug "33-qcc-v8" da 404; el correcto es "33-qcc-v8-members", pero no es entrada de ese notebook.)
-- **PENDIENTE de confirmar:** que el dataset "QCC ladder parts" declare también una licencia compatible; la de Apache 2.0 es la del notebook y no necesariamente cubre el dataset.
+- Licencia del dataset "QCC ladder parts" (barra lateral y metadatos, según el equipo): **Apache 2.0**. Confirmado también ahí el circuito V34 en `invsqrt-af469847`.
 - URL exacta del notebook y del dataset, y fecha de consulta: **PENDIENTE de completar**.
 - El `.kmb` de V34 **no** está en este repositorio ni en ninguna zip de entrega.
 
@@ -39,5 +39,5 @@ Los datos de V34 los aportó el otro agente del equipo; este documento recoge lo
 
 ## Estado frente a las reglas
 - Ninguna zip enviada a Kaggle contiene material derivado de V34 (la zip vigente lleva logshift2, sha256 `096c37a6…`).
-- Licencia del notebook confirmada (Apache 2.0): el uso derivado es permitido por las reglas, citando la fuente y declarando la derivación. Falta confirmar la licencia del dataset.
-- Pendiente antes de enviar: medir qué fracción del circuito final es propia y qué fracción es V34 reescrito, y declararlo en el README de la zip.
+- Licencia del notebook confirmada (Apache 2.0): el uso derivado es permitido por las reglas, citando la fuente y declarando la derivación. Licencia del dataset también confirmada (Apache 2.0).
+- Pendiente antes de enviar: cumplir las obligaciones de Apache 2.0 (arriba), citar a SomeJoint, yoyobar y Ehan Mallick, medir qué fracción del circuito final es propia y qué fracción es V34 reescrito, y declararlo en el README de la zip.
