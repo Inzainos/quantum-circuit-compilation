@@ -17,7 +17,7 @@ from typing import List, Sequence
 import kickmix as km
 import dqi_bm_model as GM
 from dqi_kmul import ixor_kmul
-from dqi_tower_inv2 import ValueInv
+from dqi_tower_inv3 import ValueInv3 as ValueInv
 
 log = logging.getLogger("dqi_bm_v1")
 DEG = 12

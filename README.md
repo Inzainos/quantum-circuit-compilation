@@ -107,7 +107,7 @@ quantum-circuit-compilation/
 
 ### Publicación en GitHub
 
-`submission/submission.zip` (~74 MB, ~910 MB descomprimido) es el artefacto de envío.
+**Vigente (2026-11-07):** `submission/final_submission.zip` (~58 MB) es el artefacto de envío; su contenido y verificación están en `docs/ESTADO_FINAL_2026-11-07.md`. (Lo que sigue de esta sección y la tabla «Estado actual (2026-11-03)» son históricos.)
 Los circuitos y datasets sueltos (`.kmb`, `.kmx`, `.npz`, `.fcidump`), el entorno
 virtual y la copia local del paper no se versionan (`.gitignore`): algunos superan
 el límite de 100 MiB por archivo de GitHub. Cada nuevo commit del ZIP infla el

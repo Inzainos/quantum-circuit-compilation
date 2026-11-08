@@ -25,10 +25,10 @@ import kickmix as km
 import dqi_bm_model as G
 from dqi_bm_stage_v1 import BMStageV1
 from dqi_omega_stage import build_omega
-from dqi_tower_inv2 import ValueInv
+from dqi_tower_inv3 import ValueInv3 as ValueInv
 from dqi_scan_stage import _linear_sources, _emit_linear, _alpha_pow_bits
 from dqi_tower_inv import CCOLS
-from dqi_tower_inv2 import TowerInv2 as TowerInv
+from dqi_tower_inv3 import TowerInv3 as TowerInv
 
 log = logging.getLogger("dqi_decoder")
 DEG = 12
@@ -52,8 +52,8 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
     positions = range(min(n_pos, G.Q - 1)) if positions is None else positions
     apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
     # Reutilizar registros entre posiciones para reducir overhead de alloc/free
-    s = b.alloc_qubits(DEG); u = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
-    t = b.alloc_qubits(DEG); f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(DEG)
+    s = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
+    tmp = b.alloc_qubits(1)[0]; f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(1)[0]   # un solo qubit para el AND de fase (se usa de a uno)
     for p in positions:
         r = _alpha_pow_bits(-p)
         with b.mark('scan_pos'):
@@ -72,44 +72,41 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
             for i in range(2, DEG - 1):
                 b.init_and(lad[i - 2], s[i], lad[i - 1])
             b.init_and(lad[DEG - 3], s[DEG - 1], f)
-            _emit_linear(b, src_u, u)
             _emit_linear(b, src_d, dd)
             if tower:
                 TI = TowerInv(b, dd, w); TI.forward()
             else:
                 _, scaf = b.init_gf2_inverse_with_scaffold(dd, target=w, field=field)
-            for k in range(DEG):
-                b.push_condition(E[p][k])
-                for a in range(DEG):
-                    srcs = [w[bb] for bb in range(DEG) if (apow[a + bb] >> k) & 1]
-                    if srcs:
-                        b.cx(km.array(srcs), km.array([t[a]] * len(srcs)))
-                b.pop_condition()
+            # fase: (-1)^{ sum_a (f & u_a) * t_a },  t_a = sum_k E[p][k] * sum_{b in srcs(a,k)} w_b
+            # sin registros t ni u: u_a se forma en un solo qubit 'tmp' y la fase se aplica con CZ(g_a, w_b) condicionados a E[p][k]
             for a in range(DEG):
-                b.init_and(f, u[a], g[a]); b.cz(g[a], t[a]); b.del_and(f, u[a], g[a])
-            for k in reversed(range(DEG)):
-                b.push_condition(E[p][k])
-                for a in reversed(range(DEG)):
+                for q in src_u[a]:
+                    b.cx(q, tmp)
+                b.init_and(f, tmp, g)
+                for k in range(DEG):
                     srcs = [w[bb] for bb in range(DEG) if (apow[a + bb] >> k) & 1]
                     if srcs:
-                        b.cx(km.array(srcs), km.array([t[a]] * len(srcs)))
-                b.pop_condition()
+                        b.push_condition(E[p][k])
+                        b.cz(km.array(srcs), km.array([g] * len(srcs)))
+                        b.pop_condition()
+                b.del_and(f, tmp, g)
+                for q in src_u[a]:
+                    b.cx(q, tmp)
             if tower:
                 TI.undo()
             else:
                 b.del_gf2_inverse_with_scaffold(dd, target=w, scaffold=scaf, field=field)
                 b.free(scaf)
             _emit_linear(b, src_d, dd)
-            _emit_linear(b, src_u, u)
             b.del_and(lad[DEG - 3], s[DEG - 1], f)
             for i in reversed(range(2, DEG - 1)):
                 b.del_and(lad[i - 2], s[i], lad[i - 1])
             b.del_and(s[0], s[1], lad[0])
             b.x(s)
             _emit_linear(b, src_s, s)
-    for q in (s, u, dd, w, t, lad, g):
+    for q in (s, dd, w, lad):
         b.free(q)
-    b.free(f)
+    b.free(tmp); b.free(f); b.free(g)
 
 
 def build_omega_tmp(b, field, sig, S, LO, adjoint):

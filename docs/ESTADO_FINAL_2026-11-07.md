@@ -1,5 +1,5 @@
 # Estado Final - Google Verifiable Quantum Circuit Competition
-## Entrega validada: submission/submission_final.zip
+## Entrega validada: submission/final_submission.zip
 
 **Fecha:** 2026-11-07  
 **Branch:** local/quantum-dqi-v2.0.0  
@@ -13,7 +13,7 @@
 |-----------|---------|--------|---------|--------|
 | invsqrt (Fusion Energy) | invsqrt.kmb | 139 | 2,561 | 7e842bbfba8fb40d32c05b3b195073cf368981a92de77197ed22bd3a3f3faf79 |
 | dqi (Combinatorial Opt.) | dqi.kmb | 2,016 | 784,172 | 2b9eb49fd404d5cc81516f1c3b8271229c16c45506f3e84c73e70df78a06dbec |
-| dfthcsos (FeMoCo) | angle_k_0..9.kmx + submission.npz | 119 c/u | 3,974 c/u | desde commit fb4e95b |
+| dfthcsos (FeMoCo) | angle_k_0..9.kmx + submission.npz | 119 c/u | 3,974 c/u | refit LBFGS de Mole (`lbfgs_ep100_rho1e-4`, npz sha `d89772be…b7fa4d`; PASS oficial 3,336,160,975, λ_eff 49.016) |
 
 **Tamaño ZIP:** 59 MB  
 **Estructura:** ✓ invsqrt.kmb, dqi.kmb, dfthcsos/angle_k_0..9.kmx, dfthcsos/submission.npz (sin gaps)
@@ -53,7 +53,7 @@ for p in positions:
     ...
 for q in (s, u, dd, w, t, lad, g): b.free(q)
 ```
-**Impacto:** Elimina presión temporal de qubits, sin cambio en Toffoli estático.
+**Impacto (medido 2026-11-07):** ninguno en Toffoli (784,172) ni en qubits (2,016); es solo limpieza del código. Cambia el sha del dqi.kmb (de `b555bbeda1…` a `2b9eb49f…`).
 
 ### 3.2 MBU (Measurement-Based Uncomputation) - Nativo en kickmix
 - `del_and` = HMR (Hadamard-Measure-Reset) + CZ condicionado
@@ -168,7 +168,7 @@ docs/
 ```bash
 # Rebuild ZIP si hay cambios en circuitos
 cd /home/deamon/quantum-circuit-compilation
-.venv/bin/python submission/rebuild_valid_zip.py submission/submission_final.zip --dfthcsos-commit fb4e95b
+.venv/bin/python submission/rebuild_valid_zip.py submission/final_submission.zip --dfthcsos-zip <zip con dfthcsos/ del candidato refit>
 ```
 
 ---
@@ -183,8 +183,34 @@ cd /home/deamon/quantum-circuit-compilation
 .venv/bin/python -m pytest tests/ -q
 
 # Verificar estructura ZIP
-unzip -l submission/submission_final.zip
+unzip -l submission/final_submission.zip
 
 # SHA256 de circuitos
-sha256sum submission/submission_final.zip
+sha256sum submission/final_submission.zip
 ```
+
+---
+
+## Corrección 2026-11-07 (revisión de main 55c2197)
+
+- `submission/final_submission.zip` se reconstruyó desde el código de main con
+  `submission/rebuild_valid_zip.py --dfthcsos-zip <zip anterior>` para que el dqi.kmb
+  coincida con `src/dqi_decoder_v1.py` (la zip anterior traía el dqi del código previo
+  a la reutilización de registros). Contenido y SHA-256:
+  - `invsqrt.kmb` `7e842bbfba8fb40d32c05b3b195073cf368981a92de77197ed22bd3a3f3faf79`
+    (verificador oficial, dominio completo, 1 tiro/x, `--batch-size 4`: Q=139, T=2,561,
+    toffoli_equivalent 2,805.79, peor error 0.792 → score 390,005).
+  - `dqi.kmb` `2b9eb49fd404d5cc81516f1c3b8271229c16c45506f3e84c73e70df78a06dbec`
+    (784,172 Toffoli, Q=2,016; `tools/dqi_decoder_test.py --posiciones 4095 --tiros 128`: PASA;
+    muestreo `tools/dqi_harness.py` 102,400 tiros semilla 1: 0 fallos).
+    El `verify_submission_dqi.py` completo no corre en una caja de 8 GB (`reaction_depth` → bad_alloc).
+  - `dfthcsos/`: candidato refit de Mole (sin cambios respecto a la zip anterior).
+- El archivo se llama `final_submission.zip` (no `submission_final.zip`).
+- Se eliminó `submission/submission.zip` (261 KB): era el zip inválido de la PR #17.
+
+
+### Actualización (tarde del 2026-11-07): dqi con Q=1,949
+`final_submission.zip` se reconstruyó con la torre sin copias (`src/dqi_tower_inv3.py`): `dqi.kmb` sha
+`6108f5c344b995221f3cf57cd357a1742051031cc89929d0ae055a7bb5233dfb` (784,172 Toffoli, **Q=1,949**; antes 2,016).
+`invsqrt.kmb` y `dfthcsos/` sin cambios. Pruebas: 4,095 posiciones PASA; 102,400 tiros semilla 1: 0 fallos,
+semilla 7: 2 fallos. Ver `docs/DQI_Q_ANALISIS_2026-11-07.md`.
