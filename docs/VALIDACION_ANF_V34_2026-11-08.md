@@ -36,3 +36,12 @@ Lectura:
 - La función que ve cada `Z_POW` es una función **densa** de x (hasta millones de monomios, grado hasta 22), no un polinomio de pocos términos. Es el valor de qubits producidos por aritmética (acarreos), no por ANDs de bits de x.
 - Por tanto las listas "compuestas a x" (`rotaciones_q28_en_x.json`: 336–406 monomios; `intermedios_q28_to_x.json`: q50 = 7 monomios) **no son la función real en x**: p. ej. q50 al comienzo ya tiene 170 monomios exactos en x. Las ANF trazadas (1–105 monomios) son expresiones sobre qubits intermedios, no sobre x.
 - Consecuencia: implementar las rotaciones como polinomio directo en x no es viable (cientos de miles a millones de monomios por rotación). El costo de V34 está en calcular esos valores intermedios con aritmética reversible (≈830 de sus ≈1,050 Toffoli en el tramo central), y esa parte no se reduce a ANDs compartidos sobre x.
+
+### Comprobación de determinismo (2026-11-08)
+Para descartar que la densidad se debiera a los resultados aleatorios de las mediciones (HMR), se fijó una x y se repitió con 4,096 tiros y semillas distintas,
+en 12 de las 51 rotaciones y con 3 valores de x cada una (36 pruebas): el qubit objetivo salió siempre 0 o siempre 1 en todos los tiros.
+El valor del qubit en cada `Z_POW` es una función determinista de x; la tabla de monomios exactos es válida.
+
+### Causa del desacuerdo de las ANF trazadas (reportada por el equipo)
+`trace_back.py` (generó `rotaciones_anf.json`) ignora las condiciones `if` de las compuertas condicionales (`CX q41 q40 if b21901` se trata como CX incondicional).
+La semántica probada (qN = valor del qubit al inicio de una ventana de 300 líneas) tampoco validó (acuerdo medio 0.524 en 32 tiros). Las ANF trazadas son incorrectas por esa causa.
