@@ -5,14 +5,17 @@
 Uso: python3.13 probar_dinamica.py [--tiros N]
 """
 import json, sys, argparse
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/src')
-sys.path.insert(0, '/home/hatch/workspace/qcc-data/kickmix')
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/verifiers/invsqrt')
+import os as _os, pathlib as _pl
+_R = _pl.Path(__file__).resolve().parents[2]  # raiz del repo
+sys.path.insert(0, str(_R / 'src'))
+if _os.environ.get('KICKMIX_PATH'):  # opcional: ruta del paquete kickmix si no esta instalado
+    sys.path.insert(0, _os.environ['KICKMIX_PATH'])
+sys.path.insert(0, str(_R / 'verifiers' / 'invsqrt'))
 import numpy as np
 import kickmix as km
 from invsqrt_poly import PolyPhaseBuilder, build_layer1_dynamic
 
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(_R / 'data' / 'invsqrt-sweep')
 ap = argparse.ArgumentParser()
 ap.add_argument('--tiros', type=int, default=1024)
 a = ap.parse_args()

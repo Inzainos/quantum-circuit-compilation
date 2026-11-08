@@ -11,7 +11,7 @@ Uso: python3.13 medir_resto.py
 import json
 from itertools import combinations
 
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(__import__('pathlib').Path(__file__).resolve().parent)
 inter = json.load(open(f'{BASE}/intermedios_q28_to_x.json'))
 
 # --- Clausula de prefijos: todos los productos (ANDs) necesarios ---

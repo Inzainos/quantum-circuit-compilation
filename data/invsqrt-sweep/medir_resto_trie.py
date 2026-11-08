@@ -4,7 +4,7 @@ comunes se comparten. El costo minimo (para un orden fijo de variables) es
 el numero de nodos del trie a profundidad >= 2.
 """
 import json
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(__import__('pathlib').Path(__file__).resolve().parent)
 inter = json.load(open(f'{BASE}/intermedios_q28_to_x.json'))
 
 # Orden canonico de variables (las que mas aparecen primero, para compartir mas)

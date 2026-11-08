@@ -8,13 +8,16 @@ por eso son 2559 rotaciones. La escala S no esta aplicada aqui (es el
 hueco conocido); esto mide el costo de la parte Q(u) + su computo.
 """
 import json, sys
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/src')
-sys.path.insert(0, '/home/hatch/workspace/qcc-data/kickmix')
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/verifiers/invsqrt')
+import os as _os, pathlib as _pl
+_R = _pl.Path(__file__).resolve().parents[2]  # raiz del repo
+sys.path.insert(0, str(_R / 'src'))
+if _os.environ.get('KICKMIX_PATH'):  # opcional: ruta del paquete kickmix si no esta instalado
+    sys.path.insert(0, _os.environ['KICKMIX_PATH'])
+sys.path.insert(0, str(_R / 'verifiers' / 'invsqrt'))
 import kickmix as km
 from invsqrt_poly import PolyPhaseBuilder
 
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(_R / 'data' / 'invsqrt-sweep')
 mono = json.load(open(f'{BASE}/monomios_Qu_thr1e-10.json'))
 print(f"monomios Q(u): {len(mono)}")
 # Costo analitico rapido (sin construir todo el circuito aun)

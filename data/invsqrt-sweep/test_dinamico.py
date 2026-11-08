@@ -1,12 +1,15 @@
 """Compara la capa 1 estatica vs dinamica (q28)."""
 import json, sys
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/src')
-sys.path.insert(0, '/home/hatch/workspace/qcc-data/kickmix')
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/verifiers/invsqrt')
+import os as _os, pathlib as _pl
+_R = _pl.Path(__file__).resolve().parents[2]  # raiz del repo
+sys.path.insert(0, str(_R / 'src'))
+if _os.environ.get('KICKMIX_PATH'):  # opcional: ruta del paquete kickmix si no esta instalado
+    sys.path.insert(0, _os.environ['KICKMIX_PATH'])
+sys.path.insert(0, str(_R / 'verifiers' / 'invsqrt'))
 import kickmix as km
 from invsqrt_poly import PolyPhaseBuilder, build_layer1, build_layer1_dynamic, _topo_order
 
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(_R / 'data' / 'invsqrt-sweep')
 inter = json.load(open(f'{BASE}/intermedios_q28_to_x.json'))
 inter_anf = {q: v['monomials'] for q, v in inter.items()}
 # q24 como entrada (su ANF completa no esta en el JSON)

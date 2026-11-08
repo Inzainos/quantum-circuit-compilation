@@ -8,7 +8,7 @@
 Uso: python3.13 tercera_tuberia.py
 """
 import json
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(__import__('pathlib').Path(__file__).resolve().parent)
 inter = json.load(open(f'{BASE}/intermedios_q28_to_x.json'))
 # q24 no esta en ese archivo; se trazo aparte (14 monomios, 13 en x, uno q19*q23)
 q24_monos = None

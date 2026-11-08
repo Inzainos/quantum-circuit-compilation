@@ -3,13 +3,16 @@
   python3.13 build_v34_q28.py
 """
 import json, sys
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/src')
-sys.path.insert(0, '/home/hatch/workspace/qcc-data/kickmix')
-sys.path.insert(0, '/home/hatch/workspace/qcc-zip-final/verifiers/invsqrt')
+import os as _os, pathlib as _pl
+_R = _pl.Path(__file__).resolve().parents[2]  # raiz del repo
+sys.path.insert(0, str(_R / 'src'))
+if _os.environ.get('KICKMIX_PATH'):  # opcional: ruta del paquete kickmix si no esta instalado
+    sys.path.insert(0, _os.environ['KICKMIX_PATH'])
+sys.path.insert(0, str(_R / 'verifiers' / 'invsqrt'))
 import kickmix as km
 from invsqrt_poly import PolyPhaseBuilder
 
-BASE = '/home/hatch/workspace/qcc-data/invsqrt-sweep'
+BASE = str(_R / 'data' / 'invsqrt-sweep')
 rots = json.load(open(f'{BASE}/rotaciones_q28_en_x.json'))
 # Modelo de costo: x (22) + 5 intermedios como entradas = 27 qubits.
 extra = ['q23', 'q24', 'q25', 'q26', 'q40']
