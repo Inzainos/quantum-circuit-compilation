@@ -5,11 +5,12 @@ Los datos de V34 los aportó el otro agente del equipo; este documento recoge lo
 
 ## Fuente externa
 - Circuito: `invsqrt-public-v34.kmb` (circuito público de otro participante).
-- Autoría (declarada por el equipo): circuito de **SomeJoint**; es el circuito de 62 qubits de **yoyobar** con los dos AND merges de **Ehan Mallick**, según lo distribuye **Alex Chilton**.
-- Origen: notebook público de SomeJoint (accesible). Dataset de referencia: "33 QCC V8" (busyaprime); la URL directa devuelve 404, **PENDIENTE de confirmar**.
-- Licencia del notebook/dataset de origen: **PENDIENTE de confirmar** (las reglas solo aceptan código público con licencia aprobada por la OSI, p. ej. Apache 2.0).
-- URL exacta del notebook y fecha de consulta: **PENDIENTE de completar**.
-- Medición con el verificador oficial de la competencia (PASS): Q = 62, Toffoli medios = 1,281.66 (máximo estático 1,537), T ≈ 1,191, 41 rotaciones, C (toffoli_equiv) = 1,579.38, Q·C = 97,921. Referencia propia (logshift2): Q·C = 390,005.
+- Autoría (declarada por el equipo): circuito de 62 qubits de **yoyobar** con los dos AND merges de **Ehan Mallick**, distribuido por **Alex Chilton** y publicado por **SomeJoint** (Agniv Banerjee).
+- Notebook público de origen: "Quantum Circuits | 24.65 Local GM: Chem Refit", versión 36, score público 24.65393, autor SomeJoint.
+- Licencia del notebook (texto de su página): "This Notebook has been released under the Apache 2.0 open source license." (aprobada por la OSI).
+- Archivo del circuito V34 (sha256 `af469847…`): dataset **"QCC ladder parts"** de SomeJoint, subcarpeta `invsqrt-af469847`. (El slug "33-qcc-v8" da 404; el correcto es "33-qcc-v8-members", pero no es entrada de ese notebook.)
+- **PENDIENTE de confirmar:** que el dataset "QCC ladder parts" declare también una licencia compatible; la de Apache 2.0 es la del notebook y no necesariamente cubre el dataset.
+- URL exacta del notebook y del dataset, y fecha de consulta: **PENDIENTE de completar**.
 - El `.kmb` de V34 **no** está en este repositorio ni en ninguna zip de entrega.
 
 ## Tomado de V34
@@ -31,6 +32,12 @@ Los datos de V34 los aportó el otro agente del equipo; este documento recoge lo
 - La entrega debe ser trabajo original propio y no infringir derechos de terceros. Si el circuito final reproduce V34 función por función: citar la fuente, declarar la derivación y, idealmente, ir más allá de V34.
 - El repositorio de GitHub es público: los JSON con datos trazados de V34 ya son públicos.
 
+## Obligaciones de Apache 2.0 (si se redistribuye material derivado)
+- Incluir copia de la licencia y conservar los avisos de autoría/atribución del material original.
+- Indicar de forma visible qué archivos se modificaron respecto al original.
+- Citar la fuente (autores, notebook, dataset) en el README de la zip.
+
 ## Estado frente a las reglas
 - Ninguna zip enviada a Kaggle contiene material derivado de V34 (la zip vigente lleva logshift2, sha256 `096c37a6…`).
-- **Antes de enviar algo que dependa de datos o estructura de V34**: revisar en las reglas de la competencia qué se permite con código público, si exige citar la fuente y si limita compartir circuitos entre equipos. Citar autor y URL en el README de la zip.
+- Licencia del notebook confirmada (Apache 2.0): el uso derivado es permitido por las reglas, citando la fuente y declarando la derivación. Falta confirmar la licencia del dataset.
+- Pendiente antes de enviar: medir qué fracción del circuito final es propia y qué fracción es V34 reescrito, y declararlo en el README de la zip.
