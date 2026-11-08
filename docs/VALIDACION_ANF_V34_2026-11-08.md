@@ -35,7 +35,7 @@ Resultado para las primeras 9 rotaciones de q28 (las siguientes se interrumpiero
 Lectura:
 - La función que ve cada `Z_POW` es una función **densa** de x (hasta millones de monomios, grado hasta 22), no un polinomio de pocos términos. Es el valor de qubits producidos por aritmética (acarreos), no por ANDs de bits de x.
 - Por tanto las listas "compuestas a x" (`rotaciones_q28_en_x.json`: 336–406 monomios; `intermedios_q28_to_x.json`: q50 = 7 monomios) **no son la función real en x**: p. ej. q50 al comienzo ya tiene 170 monomios exactos en x. Las ANF trazadas (1–105 monomios) son expresiones sobre qubits intermedios, no sobre x.
-- Consecuencia: implementar las rotaciones como polinomio directo en x no es viable (cientos de miles a millones de monomios por rotación). El costo de V34 está en calcular esos valores intermedios con aritmética reversible (≈830 de sus ≈1,050 Toffoli en el tramo central), y esa parte no se reduce a ANDs compartidos sobre x.
+- Consecuencia: implementar las rotaciones como polinomio directo en x no es viable (cientos de miles a millones de monomios por rotación). El costo de V34 está en calcular esos valores intermedios con aritmética reversible (el tramo central, líneas 15,000–40,000, tiene ≈1,050 CCX/CCZ por conteo estático), y esa parte no se reduce a ANDs compartidos sobre x. (No se debe repetir la cifra de «≈830 en intermedios»: salía de restar ≈216, medido sobre ANF que resultaron incorrectas; el único dato firme es el conteo estático del tramo.)
 
 ### Comprobación de determinismo (2026-11-08)
 Para descartar que la densidad se debiera a los resultados aleatorios de las mediciones (HMR), se fijó una x y se repitió con 4,096 tiros y semillas distintas,
@@ -45,3 +45,8 @@ El valor del qubit en cada `Z_POW` es una función determinista de x; la tabla d
 ### Causa del desacuerdo de las ANF trazadas (reportada por el equipo)
 `trace_back.py` (generó `rotaciones_anf.json`) ignora las condiciones `if` de las compuertas condicionales (`CX q41 q40 if b21901` se trata como CX incondicional).
 La semántica probada (qN = valor del qubit al inicio de una ventana de 300 líneas) tampoco validó (acuerdo medio 0.524 en 32 tiros). Las ANF trazadas son incorrectas por esa causa.
+
+### Segunda causa de error en `trace_back.py` (verificada en el código, 2026-11-08)
+Además de ignorar los `if` (`parse()` corta en el token `if`), `trace_back.py` define `MAX_DEGREE = 6` y `MAX_MONOMIALS = 4000`, y `anf_prod` descarta los
+monomios de grado > 6. La forma exacta en x llega a grado 22, así que el trazado trunca términos en silencio incluso sin condiciones.
+Conteos verificados en el `.kmx`: 14,546 líneas con `if b` (CZ 10,482; Z 1,592; CX 1,494; BIT_INVERT 489; Z_POW 45; NEG 45; otras); 1,494 CX condicionales se trataron como incondicionales.
