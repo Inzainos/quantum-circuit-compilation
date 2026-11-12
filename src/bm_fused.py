@@ -11,9 +11,11 @@ Costo de seleccion: 12 CSWAP = 12 Toffoli + 24 CX (vs 12 CCX + 36 CX del mux ori
 Ahorro: registro Pinv (12 qubits). Andamios: los 18 son de la torre (el mul usa 0); no hay nada que compartir ahi.
 """
 from __future__ import annotations
+import os
 import sys
 sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
 sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # SCRATCH rama-t-eliminada: prioridad sobre el repo
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG
 
@@ -28,10 +30,10 @@ class BMStageFused(BMStageV1):
 
     def forward_round(self, r: int):
         b = self.b
-        p = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+        p = b.alloc_qubits(1)[0]
         D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
         self._disc(r, D)
-        self._flags(D, p, t, inverse=False)
+        self._flags(D, p, inverse=False)
         b.cx(self.sigma[0], X)
         with b.mark('bm_alpha'):
             P = b.init_gf2_mul(X, D, field=self.f)
@@ -49,17 +51,17 @@ class BMStageFused(BMStageV1):
             self._inv_del(scaf, P, alpha)            # undo inv (hmr en alpha -> 0)
             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
         self._xmux(X, p)
-        self._dclear(D, p, t)
+        self._dclear(D, p)
         b.free(alpha); b.free(X); b.free(D)
         self.tau = [self.tau[-1]] + self.tau[:-1]
-        self.flags.append((p, t))
+        self.flags.append(p)
 
     def reverse_round(self, r: int):
         b = self.b
-        p, t = self.flags.pop()
+        p = self.flags.pop()
         self.tau = self.tau[1:] + [self.tau[0]]
         D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
-        self._dclear(D, p, t)
+        self._dclear(D, p)
         self._xmux(X, p)
         with b.mark('bm_alpha'):
             P = b.init_gf2_mul(X, D, field=self.f)
@@ -77,9 +79,9 @@ class BMStageFused(BMStageV1):
             self._inv_del(scaf, P, alpha)
             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
         b.cx(self.sigma[0], X)
-        self._flags(D, p, t, inverse=True)
+        self._flags(D, p, inverse=True)
         self._disc_clear(r, D)
-        b.free(alpha); b.free(X); b.free(D); b.free(p); b.free(t)
+        b.free(alpha); b.free(X); b.free(D); b.free(p)
 
 
 def build_stage_fused(n=70, LS=36, degree=12, ida_y_vuelta=True) -> km.Circuit:
