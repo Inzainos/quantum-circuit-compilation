@@ -98,7 +98,15 @@ class BMStageV1:
                         b.cz(self.sigma[i][u], self.S[r - i][v])
                     b.pop_condition()
 
-    def _flags(self, D, p, t, inverse: bool):
+    def _flags(self, D, p, inverse: bool):
+        """Solo p (sin t). p = [D!=0 y d>=0] = nz AND (d>=0).
+
+        CAMBIO rama-t-eliminada: la bandera t ya no se materializa. En la ida
+        _flags calcula solo p (la escalera + init_and, 12 T, igual que antes);
+        en la vuelta descomputa solo p. El control del cswap de _dclear lo
+        reconstruye _dclear como w = (no p) AND (d_post <= 0) (9 T).
+        nz se libera dentro de _flags como antes (x(nz); cx(z,nz) + del_and).
+        """
         b = self.b
         with b.mark('bm_flags'):
             lad = b.alloc_qubits(DEG - 2); z = b.alloc_qubits(1)[0]; nz = b.alloc_qubits(1)[0]
@@ -111,9 +119,7 @@ class BMStageV1:
             b.x(self.d[DW - 1])                            # 1 si d >= 0
             if not inverse:
                 b.init_and(nz, self.d[DW - 1], p)
-                b.cx(nz, t); b.cx(p, t)                    # t = nz xor p
             else:
-                b.cx(p, t); b.cx(nz, t)
                 b.del_and(nz, self.d[DW - 1], p)
             b.x(self.d[DW - 1])
             b.x(nz); b.cx(z, nz)
@@ -142,8 +148,78 @@ class BMStageV1:
             else:
                 b.isub(1, target=self.d, control=p); b.isub(1, target=self.d); b.cx(p, self.d)
 
-    def _dclear(self, D, p, t):
-        """Forward: lleva D a cero (replace: inverso de sigma_0; retain: a H).  Reverse: lo reconstruye (misma secuencia)."""
+    def _t_recon(self, p):
+        """w = (no p) AND (d_post <= 0). Reconstruccion de t (Frente A).
+
+        d_post <= 0 <=> signo(d_post) O (d_post == 0). Costo 9 T, 11 ancillas
+        transitorias (escalera 6 + z0 + s1 + or_out + np + w). La regla es
+        exacta salvo la rama (D=0, d<0) (reserva medida del Frente A:
+        0/238,000 rondas; el verificador arbitra). Copia de
+        frente_a_t_scan/medir_t_recon.py, con el descomputo CORREGIDO (ver
+        _t_recon_del): medir_t_recon.py liberaba np_ y s1 sucios (les faltaba
+        el cx de vuelta); aqui se descomputan bien (0 T, solo cx).
+        """
+        b = self.b
+        d = self.d  # 8 bits, d_post
+        b.x(d)  # flip d para el test de cero
+        lad = b.alloc_qubits(DW - 2)  # 6 temps de escalera
+        z0 = b.alloc_qubits(1)[0]
+        b.init_and(d[0], d[1], lad[0])
+        for i in range(2, DW - 1):
+            b.init_and(lad[i - 2], d[i], lad[i - 1])
+        b.init_and(lad[DW - 3], d[DW - 1], z0)  # z0 = [d == 0]
+        b.x(d)  # restaura d
+        s1 = b.alloc_qubits(1)[0]
+        b.cx(d[DW - 1], s1)
+        b.x(s1)  # s1 = NOT d[7]
+        b.x(z0)  # NOT z0
+        or_out = b.alloc_qubits(1)[0]
+        b.init_and(s1, z0, or_out)
+        b.x(z0)
+        b.x(or_out)  # or_out = [d <= 0]
+        np_ = b.alloc_qubits(1)[0]
+        b.cx(p, np_)
+        b.x(np_)  # np = NOT p
+        w = b.alloc_qubits(1)[0]
+        b.init_and(or_out, np_, w)  # w = [d<=0] AND (NOT p)
+        self._t_recon_scaf = (lad, z0, s1, or_out, np_)
+        return w
+
+    def _t_recon_del(self, p, w):
+        """Descomputo de _t_recon (0 T). Espejo exacto del computo."""
+        b = self.b
+        lad, z0, s1, or_out, np_ = self._t_recon_scaf
+        b.del_and(or_out, np_, w)
+        b.free(w)
+        b.x(np_)
+        b.cx(p, np_)  # np -> 0 (medir_t_recon.py lo liberaba sucio)
+        b.free(np_)
+        b.x(or_out)
+        b.x(z0)
+        b.del_and(s1, z0, or_out)
+        b.x(z0)
+        b.x(s1)
+        b.cx(self.d[DW - 1], s1)  # s1 -> 0 (medir_t_recon.py lo liberaba sucio)
+        b.free(s1)
+        b.free(or_out)
+        b.x(self.d)
+        b.del_and(lad[DW - 3], self.d[DW - 1], z0)
+        for i in reversed(range(2, DW - 1)):
+            b.del_and(lad[i - 2], self.d[i], lad[i - 1])
+        b.del_and(self.d[0], self.d[1], lad[0])
+        b.x(self.d)
+        b.free(lad)
+        b.free(z0)
+
+    def _dclear(self, D, p):
+        """Forward: lleva D a cero (replace: inverso de sigma_0; retain: a H).  Reverse: lo reconstruye (misma secuencia).
+
+        CAMBIO rama-t-eliminada: el control del cswap es w = _t_recon(p)
+        (9 T, transitorio), calculado DESPUES de liberar la torre de inversion
+        (el pico de _dclear queda en la inversion, 1,860; w anade 11
+        transitorios sobre ~1,830 -> 1,841 < 1,860). w se descomputa justo
+        despues del cswap. Misma funcion en ida y vuelta (d = d_post en ambas).
+        """
         b = self.b
         with b.mark('bm_dclear'):
             u = b.alloc_qubits(DEG)
@@ -151,15 +227,17 @@ class BMStageV1:
             b.ccx(p, u, D)
             self._inv_del(h, self.sigma[0], u)
             b.free(u)
-            b.cswap(t, D, self.H)
+            w = self._t_recon(p)
+            b.cswap(w, D, self.H)
+            self._t_recon_del(p, w)
 
     # ---------------- rondas ----------------
     def forward_round(self, r: int):
         b = self.b
-        p = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+        p = b.alloc_qubits(1)[0]
         D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
         self._disc(r, D)
-        self._flags(D, p, t, inverse=False)
+        self._flags(D, p, inverse=False)
         b.cx(self.sigma[0], X)                              # X = sigma_0 anterior
         with b.mark('bm_alpha'):
             P = b.init_gf2_mul(X, D, field=self.f)
@@ -179,17 +257,17 @@ class BMStageV1:
             b.free(Pinv)
             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
         self._xmux(X, p)                                    # X -> 0
-        self._dclear(D, p, t)                               # D -> 0
+        self._dclear(D, p)                                  # D -> 0
         b.free(alpha); b.free(X); b.free(D)
         self.tau = [self.tau[-1]] + self.tau[:-1]
-        self.flags.append((p, t))
+        self.flags.append(p)
 
     def reverse_round(self, r: int):
         b = self.b
-        p, t = self.flags.pop()
+        p = self.flags.pop()
         self.tau = self.tau[1:] + [self.tau[0]]
         D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
-        self._dclear(D, p, t)                               # reconstruye D (cswap con H, luego inversion de sigma'_0)
+        self._dclear(D, p)                                  # reconstruye D (cswap con H, luego inversion de sigma'_0)
         self._xmux(X, p)                                    # X = sigma_0 anterior
         with b.mark('bm_alpha'):
             P = b.init_gf2_mul(X, D, field=self.f)
@@ -209,9 +287,9 @@ class BMStageV1:
             b.free(Pinv)
             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
         b.cx(self.sigma[0], X)                              # X -> 0
-        self._flags(D, p, t, inverse=True)
+        self._flags(D, p, inverse=True)
         self._disc_clear(r, D)                              # D -> 0 (MBU)
-        b.free(alpha); b.free(X); b.free(D); b.free(p); b.free(t)
+        b.free(alpha); b.free(X); b.free(D); b.free(p)
 
     def forward(self, rounds=None):
         for r in range(self.n if rounds is None else rounds):
