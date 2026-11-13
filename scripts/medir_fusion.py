@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Medir Q y T del bloque alpha fusionado (F1b) vs original, y el pico fino a n=70.
 
-Uso: PYTHONPATH=... python3 medir_fusion.py [n]
+Uso: python3 scripts/medir_fusion.py [n]  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG
 from bm_fused import BMStageFused

@@ -7,11 +7,15 @@ La torre GF(2^4)^3 invertiria con a^-1 = (a^16 * a^256) * N(a)^-1.
   - La norma es una forma CUBICA (grado 3) en 12 variables: cada bit de salida tiene monomios
     de grado 3 (2 ANDs c/u) vs la norma cuadratica de la torre actual (grado 2, 1 AND c/u).
 Se mide la ANF exacta de cada bit de salida de N(a) (en una base del subcuerpo GF(16)).
-Uso: PYTHONPATH=~/workspace/qcc-data/kickmix:~/workspace/qcc-dqi/src python3 -u medir_norma_cubica.py
+Uso: python3 -u scripts/medir_norma_cubica.py  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import numpy as np
 import dqi_bm_model as G
 

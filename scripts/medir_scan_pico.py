@@ -6,11 +6,15 @@ mas 2 de redondeo del reporte = 1864) y corre el scan real 16 posiciones.
 Mide Q del circuito (high-water del pool) y el vivo maximo durante el scan.
 Si el pico del scan (sobre la base) es <= 66 (= 1930-1864, el pico BM sobre la base),
 el pico BM es el que manda y el scan no limita.
-Uso: PYTHONPATH=~/workspace/qcc-data/kickmix:~/workspace/qcc-dqi/src python3 -u medir_scan_pico.py
+Uso: python3 -u scripts/medir_scan_pico.py  (desde la raiz del repo)
 """
 import sys, time
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 import dqi_decoder_v1 as D
 import dqi_bm_model as G

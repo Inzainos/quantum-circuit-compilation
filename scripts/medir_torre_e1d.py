@@ -2,12 +2,15 @@
 """Medir ValueInv3 baseline vs ValueInv3E1d: andamios vivos, pico (Q), T, correctitud.
 
 Base: a(12) + w(12) + keep(12) = 36. Pico = Q - 36 (el pool no tiene overhead aqui).
-Uso: PYTHONPATH=~/workspace/qcc-data/kickmix:~/workspace/qcc-dqi/src python3 -u medir_torre_e1d.py
+Uso: python3 -u scripts/medir_torre_e1d.py  (desde la raiz del repo)
 """
 import sys, time
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import numpy as np
 import kickmix as km
 import dqi_bm_model as G

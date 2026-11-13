@@ -2,10 +2,12 @@
 """BM fusionado con ValueInv3R (E1='N' o E2='all') SOLO en el bloque alpha.
 _dclear / omega / scan usan ValueInv3 original."""
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG
 from bm_fused import BMStageFused

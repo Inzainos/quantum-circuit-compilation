@@ -12,9 +12,14 @@ import os
 import sys
 import time
 
-KIT = os.path.expanduser("~/workspace/qcc-data/starter-kit/starter_kit")
+KIT = os.path.expanduser(os.environ.get("QCC_STARTER_KIT", "~/workspace/qcc-data/starter-kit/starter_kit"))
 sys.path.insert(0, KIT)
-sys.path.insert(0, os.path.expanduser("~/workspace/qcc/kickmix"))
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "kickmix",):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 
 import jax.numpy as jnp  # noqa: E402
 import numpy as np  # noqa: E402
@@ -41,7 +46,9 @@ def main():
                     help="freeze U; train only W and H2_I")
     a = ap.parse_args()
 
-    out = os.path.expanduser(f"~/workspace/qcc-data/dfthcsos-refit/{a.tag}.npz")
+    _out_dir = Path(os.environ.get("QCC_REFIT_OUT_DIR", _ROOT / "outputs"))
+    _out_dir.mkdir(parents=True, exist_ok=True)
+    out = str(_out_dir / f"{a.tag}.npz")
     seed_file = a.seed_file or os.path.join(
         KIT, "starter/task1_factorization/FeMoco76_65_60_60.npz")
     print(f"tag={a.tag} solver={a.solver} lr={a.lr} epochs={a.epochs} "

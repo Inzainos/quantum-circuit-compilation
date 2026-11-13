@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Medir andamios (qubits vivos) de init_gf2_mul y ValueInv3 por separado, y del bloque alpha tal cual.
 
-Uso: PYTHONPATH=~/workspace/qcc-data/kickmix:~/workspace/qcc-dqi/src python3 medir_andamios.py
+Uso: python3 scripts/medir_andamios.py  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 from dqi_tower_inv3 import ValueInv3
 

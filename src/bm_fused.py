@@ -13,8 +13,12 @@ Ahorro: registro Pinv (12 qubits). Andamios: los 18 son de la torre (el mul usa 
 from __future__ import annotations
 import os
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # SCRATCH rama-t-eliminada: prioridad sobre el repo
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG

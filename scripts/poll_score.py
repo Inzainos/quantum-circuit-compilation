@@ -12,9 +12,9 @@ import subprocess
 import sys
 import time
 
-BIN = os.path.expanduser("~/workspace/custom-connectors/custom.kaggle/bin")
-CALLS = os.path.expanduser("~/workspace/custom-connectors/custom.kaggle/calls")
-SCRATCH = os.path.expanduser("~/workspace/qcc-data/kaggle-subida")
+BIN = os.path.expanduser(os.environ.get("QCC_KAGGLE_BIN", "~/workspace/custom-connectors/custom.kaggle/bin"))
+CALLS = os.path.expanduser(os.environ.get("QCC_KAGGLE_CALLS", "~/workspace/custom-connectors/custom.kaggle/calls"))
+SCRATCH = os.path.expanduser(os.environ.get("QCC_KAGGLE_SCRATCH", "~/workspace/qcc-data/kaggle-subida"))
 REF = 58277509
 COMPETITION = "google-verifiable-quantum-circuit-compilation"
 INTERVAL = 300

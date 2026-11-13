@@ -36,18 +36,43 @@ los scripts que los usan.
   rho=1e-4, eps=0.017, 100 épocas). El generador del circuito dfthcsos es el
   planner (clduab11, Apache 2.0, NO nuestro; postura C14/B7 abierta).
 
-## Cómo correr (advertencia: rutas de máquina)
+## Cómo correr (rutas relativas al repo)
 
-Estos archivos son copias byte por byte de los scripts de trabajo; **no se
-reescribieron**. Sus `sys.path.insert` apuntan a rutas absolutas de la máquina
-de trabajo (`/home/hatch/workspace/qcc-dqi/src`,
-`/home/hatch/workspace/qcc-data/kickmix`,
-`/home/hatch/workspace/qcc-data/dqi-perfil/...`) y varios escriben salidas a
-`/home/hatch/workspace/qcc-data/...`. En un clon fresco hay que ajustar esas
-rutas (o usar `PYTHONPATH=<repo>/src:<kickmix>` y correr desde el directorio
-adecuado). Dependencias: `kickmix` (copia vendida en `qcc-data/kickmix`; en
-este repo solo está `kickmix/LICENSE.txt`, la librería no está versionada),
-`numpy`, y para `refit.py` el starter kit de la competición + `jax`/`optax`.
+Rama `local/rutas-relativas-v1` (2026-11-12, refrescada sobre `origin/main`
+`181419ec`, Adopted v3): las rutas ya son relativas al
+repo. Cada archivo resuelve la raíz desde `__file__` (`_ROOT`) y añade
+`<repo>/src` y `<repo>/kickmix` a `sys.path`. **No hace falta `PYTHONPATH`.**
+Solo la lógica de rutas cambió; la lógica de los circuitos, los números y
+los SHAs no se tocaron (ver el diff contra `origin/main`: solo líneas de ruta).
+
+```bash
+# Desde la raíz del repo, con Python 3.13 (kickmix.so solo carga en 3.13):
+python3.13 scripts/medir_fusion.py
+python3.13 -u scripts/verificar_fusion.py
+python3.13 -u scripts/construir_dqi_e1d.py   # escribe outputs/dqi_fusionado_e1d.kmb
+```
+
+Dependencias: `kickmix` (**vendida en `kickmix/kickmix.so`** en esta rama;
+ver `kickmix/README.md` — solo CPython 3.13, Linux x86-64), `numpy`, y para
+`refit.py` el starter kit de la competición + `jax`/`optax`.
+
+Salidas: los scripts que escriben archivos lo hacen en `outputs/` del repo
+(`*.kmb`, `*.npz` e `*.ipynb`; los binarios siguen ignorados por `.gitignore`
+según las reglas del repo). Cada salida acepta override por variable de
+entorno: `QCC_DQI_FUSIONADO_OUT`, `QCC_DQI_E1D_OUT`, `QCC_NOTEBOOK_OUT`,
+`QCC_REFIT_OUT_DIR`.
+
+Dependencias externas que NO están en el repo (defaults originales, con
+override por entorno):
+
+- `refit.py` — starter kit de la competición (`QCC_STARTER_KIT`, default
+  `~/workspace/qcc-data/starter-kit/starter_kit`): trae `dfthc` y
+  `starter.task1_factorization` + los datos FeMoCo.
+- `submit_competition.py`, `poll_score.py` — conector Kaggle de la máquina
+  (`QCC_KAGGLE_BIN`, `QCC_KAGGLE_CALLS`, `QCC_KAGGLE_SCRATCH`).
+- `build_notebook.py` — el ZIP de envío (`valid_submission_fb4e95b.zip`):
+  lo busca en `/kaggle/input/qcc-submission/` o en el CWD; sin él, la
+  celda §4 del notebook lo dice y no falla el resto.
 
 Los módulos de `src/` que estos scripts importan (`dqi_bm_stage_v1`,
 `dqi_tower_inv`, `dqi_tower_inv2`, `dqi_tower_inv3`, `dqi_decoder_v1`,

@@ -8,13 +8,15 @@ Test A: fusionada forward vs fusionada+E1d forward (mismo S) -> S/sigma/tau/d/H 
 Test B: fusionada+E1d forward+reverse -> estado final == estado inicial (restauracion).
 Test C: fusionada forward+reverse vs fusionada+E1d forward+reverse -> estados finales identicos.
 
-Uso: PYTHONPATH=... python3 -u verificar_e1d.py
+Uso: python3 -u scripts/verificar_e1d.py  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import numpy as np
 import kickmix as km
 from bm_fused import BMStageFused

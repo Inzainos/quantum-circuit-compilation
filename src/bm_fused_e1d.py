@@ -7,10 +7,12 @@ Q=1937 sin cambio y T=784172+140*6=785012. Esta build lo confirma a nivel circui
 """
 import os
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # SCRATCH rama-t-eliminada: prioridad sobre el repo
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """DQI COMPLETO con E1 ('N') o E2 ('all') solo en el bloque alpha: medir Q/T total y geomean.
-Uso: python3 -u medir_dqi_r.py N|all
+Uso: python3 -u scripts/medir_dqi_r.py N|all  (desde la raiz del repo)
 NO escribe el .kmb.
 """
 import sys, time, math
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 import dqi_decoder_v1 as D
 from bm_fused_r import BMStageFusedR

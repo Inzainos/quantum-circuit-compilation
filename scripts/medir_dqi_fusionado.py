@@ -4,15 +4,20 @@
 Replica build_decoder() de dqi_decoder_v1.py pero con BMStageFused.
 Baseline (medido): TOTAL Q=1949 T=784172.
 
-Uso: PYTHONPATH=... python3 medir_dqi_fusionado.py
+Uso: python3 scripts/medir_dqi_fusionado.py  (desde la raiz del repo)
 """
-import sys, time, hashlib
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
+import os, sys, time, hashlib
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 import dqi_decoder_v1 as D
 from bm_fused import BMStageFused
+
+OUT = Path(os.environ.get("QCC_DQI_FUSIONADO_OUT", _ROOT / "outputs" / "dqi_fusionado.kmb"))
 
 DEG = 12
 
@@ -42,9 +47,10 @@ def main():
     import math
     g = 3.31 * (1949/q)**(2/3) * (784172/t)**(1/3)
     print(f"geomean estimado = 3.31 * (1949/{q})^(2/3) * (784172/{t})^(1/3) = {g:.4f}x", flush=True)
-    c.to_file("/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv/dqi_fusionado.kmb", format="kmb")
-    h = hashlib.sha256(open("/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv/dqi_fusionado.kmb","rb").read()).hexdigest()
-    print(f"guardado dqi_fusionado.kmb sha256={h}", flush=True)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    c.to_file(str(OUT), format="kmb")
+    h = hashlib.sha256(open(OUT, "rb").read()).hexdigest()
+    print(f"guardado {OUT} sha256={h}", flush=True)
 
 if __name__ == "__main__":
     main()

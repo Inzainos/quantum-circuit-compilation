@@ -3,13 +3,15 @@
 
 Replica medir_dqi_fusionado.py pero con BMStageFusedE1d. NO escribe el .kmb.
 Esperado: Q=1937 (sin cambio), T=784172+140*6=785012, geomean ~3.3225x (peor por el T extra).
-Uso: PYTHONPATH=... python3 -u medir_dqi_e1d.py
+Uso: python3 -u scripts/medir_dqi_e1d.py  (desde la raiz del repo)
 """
 import sys, time, math
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 import dqi_decoder_v1 as D
 from bm_fused_e1d import BMStageFusedE1d

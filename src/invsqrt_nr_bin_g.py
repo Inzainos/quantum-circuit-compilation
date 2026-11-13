@@ -30,6 +30,7 @@ import argparse
 import hashlib
 import logging
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -215,7 +216,7 @@ def main() -> None:
     prec = DBHEXA_PRECISION
     t0 = time.time()
     try:
-        sys.path.insert(0, "/home/hatch/workspace/qcc-data/invsqrt-sweep")
+        sys.path.insert(0, os.path.expanduser(os.environ.get("QCC_INVSQRT_SWEEP", "~/workspace/qcc-data/invsqrt-sweep")))
         from error_slack import model as _slack_model
         err = _slack_model(np.arange(1, max_x + 1), rounding="stage_all")
         exact = 1.0 / np.sqrt(np.arange(1, max_x + 1, dtype=np.float64))

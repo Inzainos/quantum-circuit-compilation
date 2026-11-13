@@ -6,12 +6,15 @@ Itoh-Tsujii binario: x^-1 = x^4094, 4094 = 0b111111111110 (11 unos).
   si bit i set: acc = acc * cur (mul 63 T, target 12).
   11 cuadrados + 10 muls = 630 T. (La cadena de adicion optima baja a ~5 muls = 315 T;
   aun asi >> 75 T de la torre.)
-Uso: PYTHONPATH=~/workspace/qcc-data/kickmix:~/workspace/qcc-dqi/src python3 -u medir_itoh_builtin.py
+Uso: python3 -u scripts/medir_itoh_builtin.py  (desde la raiz del repo)
 """
 import sys, time
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import numpy as np
 import kickmix as km
 import dqi_bm_model as G

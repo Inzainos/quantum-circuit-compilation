@@ -5,12 +5,15 @@ Test A: baseline forward vs fusionada forward (mismo S) -> sigma/tau/d/H identic
 Test B: fusionada forward+reverse -> estado final == estado inicial (restauracion).
 Test C: baseline forward+reverse vs fusionada forward+reverse -> estados finales identicos.
 
-Uso: PYTHONPATH=... python3 verificar_fusion.py
+Uso: python3 scripts/verificar_fusion.py  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import numpy as np
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1

@@ -3,19 +3,21 @@
 
 Replica medir_dqi_e1d.py (redisenio_inversor) pero guarda el circuito.
 Esperado: Q=1934, T=785012, geomean ~3.3259x.
-Uso: PYTHONPATH=... python3 -u construir_dqi_e1d.py
+Uso: python3 -u scripts/construir_dqi_e1d.py  (desde la raiz del repo)
 """
-import sys, time, math, hashlib
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/redisenio_inversor")
+import os, sys, time, math, hashlib
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 import dqi_decoder_v1 as D
 from bm_fused_e1d import BMStageFusedE1d
 
 DEG = 12
-OUT = "/home/hatch/workspace/qcc-data/dqi-perfil/verificacion_e1d/dqi_fusionado_e1d.kmb"
+OUT = Path(os.environ.get("QCC_DQI_E1D_OUT", _ROOT / "outputs" / "dqi_fusionado_e1d.kmb"))
 
 
 def main():
@@ -42,7 +44,8 @@ def main():
     print(f"Delta Q={q-1937} Delta T={t-784172} (esperado Delta Q=-3 Delta T=+840 = 140 inv alpha x 6 T)", flush=True)
     g = 3.3237 * (1937/q)**(2/3) * (784172/t)**(1/3)
     print(f"geomean estimado = 3.3237 * (1937/{q})^(2/3) * (784172/{t})^(1/3) = {g:.4f}x", flush=True)
-    c.to_file(OUT, format="kmb")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    c.to_file(str(OUT), format="kmb")
     h = hashlib.sha256(open(OUT, "rb").read()).hexdigest()
     print(f"guardado {OUT} sha256={h}", flush=True)
 

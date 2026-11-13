@@ -21,9 +21,9 @@ import sys
 import urllib.error
 import urllib.request
 
-BIN = os.path.expanduser("~/workspace/custom-connectors/custom.kaggle/bin")
-CALLS = os.path.expanduser("~/workspace/custom-connectors/custom.kaggle/calls")
-SCRATCH = os.path.expanduser("~/workspace/qcc-data/kaggle-subida")
+BIN = os.path.expanduser(os.environ.get("QCC_KAGGLE_BIN", "~/workspace/custom-connectors/custom.kaggle/bin"))
+CALLS = os.path.expanduser(os.environ.get("QCC_KAGGLE_CALLS", "~/workspace/custom-connectors/custom.kaggle/calls"))
+SCRATCH = os.path.expanduser(os.environ.get("QCC_KAGGLE_SCRATCH", "~/workspace/qcc-data/kaggle-subida"))
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):

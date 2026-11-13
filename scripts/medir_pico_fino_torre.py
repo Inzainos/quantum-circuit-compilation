@@ -5,12 +5,15 @@ Reproduce el forward de la torre manualmente con logging de live despues de cada
 para ver el pico real (incluidos transitorios tx/ty/t) y de donde salen los 7 de sobrecarga del pool
 (Q=1937 vs pico_ronda=1930).
 
-Uso: PYTHONPATH=... python3 medir_pico_fino_torre.py
+Uso: python3 scripts/medir_pico_fino_torre.py  (desde la raiz del repo)
 """
 import sys
-sys.path.insert(0, "/home/hatch/workspace/qcc-dqi/src")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/kickmix")
-sys.path.insert(0, "/home/hatch/workspace/qcc-data/dqi-perfil/fusion_mul_inv")
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "src", _ROOT / "kickmix"):
+    _s = str(_p)
+    if _s not in sys.path:
+        sys.path.insert(0, _s)
 import kickmix as km
 from dqi_bm_stage_v1 import BMStageV1, DEG
 from bm_fused import BMStageFused

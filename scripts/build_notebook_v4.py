@@ -1,10 +1,13 @@
 # Build the draft public Kaggle notebook (.ipynb) for the QCC submission.
-# Run: /home/hatch/workspace/py313/python/bin/python3.13 build_notebook.py
-# Output: qcc_submission_logshift2_fused_dqi_lbfgs.ipynb  (same dir)
+# Run: python3.13 scripts/build_notebook.py  (desde la raiz del repo)
+# Output: outputs/qcc_submission_logshift2_fused_dqi_lbfgs.ipynb  (o $QCC_NOTEBOOK_OUT)
 # Rule 0: every number below is copied from a measured log/report cited in
 # NOTEBOOK_REPORTE.md. Nothing here is invented; unmeasured things are
 # labelled as such inside the notebook.
+import os
+
 import nbformat as nbf
+from pathlib import Path
 
 nb = nbf.v4.new_notebook()
 nb.metadata = {
@@ -317,7 +320,7 @@ EXPECTED = {
 }
 CANDIDATES = [
     "/kaggle/input/qcc-submission/valid_submission_fb4e95b.zip",
-    "/home/hatch/workspace/qcc-data/valid_submission_fb4e95b.zip",
+    "valid_submission_fb4e95b.zip",  # relativo al CWD (p. ej. junto al notebook)
 ]
 
 path = next((p for p in CANDIDATES if os.path.exists(p)), None)
@@ -440,7 +443,9 @@ cells.append(md(r"""
 """))
 
 nb.cells = cells
-out = "/home/hatch/workspace/qcc-data/notebook/qcc_submission_logshift2_fused_dqi_lbfgs.ipynb"
+_ROOT = Path(__file__).resolve().parent.parent
+out = Path(os.environ.get("QCC_NOTEBOOK_OUT", _ROOT / "outputs" / "qcc_submission_logshift2_fused_dqi_lbfgs.ipynb"))
+out.parent.mkdir(parents=True, exist_ok=True)
 with open(out, "w") as f:
     nbf.write(nb, f)
 print("wrote", out, "cells:", len(cells))
