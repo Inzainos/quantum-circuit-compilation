@@ -28,7 +28,7 @@ bm = BMStageFused(b, gf, S, 36, n)
 for r in range(n - 1):
     bm.forward_round(r)
 base = int(b.num_allocated_qubits)
-print(f"base ronda 69 = {base} (esperado 1862)", flush=True)
+print(f"base ronda 69 = {base} (esperado 1793)", flush=True)
 mx = base
 def snap(tag):
     global mx
@@ -36,11 +36,11 @@ def snap(tag):
     print(f"  {tag:44s} live={v} (+{v-base})", flush=True)
 
 r = n - 1
-p = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+p = b.alloc_qubits(1)[0]
 D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
-snap("alloc p,t,D,X,alpha")
+snap("alloc p,D,X,alpha")
 bm._disc(r, D); snap("tras _disc")
-bm._flags(D, p, t, inverse=False); snap("tras _flags")
+bm._flags(D, p, inverse=False); snap("tras _flags")
 b.cx(bm.sigma[0], X); snap("tras cx sigma0->X")
 # --- alpha fusionado, torre manual ---
 P = b.init_gf2_mul(X, D, field=bm.f)

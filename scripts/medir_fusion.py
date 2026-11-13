@@ -52,11 +52,11 @@ def snap(tag):
     v = int(b.num_allocated_qubits); mx = max(mx, v)
     print(f"  {tag:38s} live={v} (+{v-base})", flush=True)
 print(f"--- ronda {n-1} fusionada (base live={base}) ---", flush=True)
-p = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+p = b.alloc_qubits(1)[0]
 D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
-snap("alloc p,t,D,X,alpha")
+snap("alloc p,D,X,alpha")
 bm._disc(n-1, D); snap("tras _disc")
-bm._flags(D, p, t, inverse=False); snap("tras _flags")
+bm._flags(D, p, inverse=False); snap("tras _flags")
 b.cx(bm.sigma[0], X); snap("tras cx sigma0->X")
 with b.mark('bm_alpha'):
     P = b.init_gf2_mul(X, D, field=bm.f)
@@ -78,12 +78,12 @@ with b.mark('bm_alpha'):
     b.del_gf2_mul(X, D, target=P, field=bm.f); b.free(P)
 snap("tras alpha undo (P liberado)")
 bm._xmux(X, p); snap("tras _xmux")
-bm._dclear(D, p, t); snap("tras _dclear")
+bm._dclear(D, p); snap("tras _dclear")
 b.free(alpha); b.free(X); b.free(D)
 snap("tras free alpha,X,D (fin ronda)")
 bm.tau = [bm.tau[-1]] + bm.tau[:-1]
-bm.flags.append((p, t))
+bm.flags.append(p)
 c = b.finish_circuit()
 print(f"RESULTADO n={n} FUSIONADA: pico_ronda={mx} Q_circuito={c.num_qubits} T={c.operation_statistics().num_toffoli_like}", flush=True)
-print(f"  live final={int(b.num_allocated_qubits)} (base {base} + 2 flags = {base+2})", flush=True)
+print(f"  live final={int(b.num_allocated_qubits)} (base {base} + 1 flag = {base+1})", flush=True)
 print(f"  BASELINE n=70: pico_ronda=1942 Q_circuito=1949 T=185034", flush=True)
