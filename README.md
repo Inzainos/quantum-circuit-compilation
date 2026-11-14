@@ -107,7 +107,7 @@ quantum-circuit-compilation/
 
 ### Publicación en GitHub
 
-**Vigente (2026-11-07):** `submission/final_submission.zip` (~58 MB) es el artefacto de envío; su contenido y verificación están en `docs/ESTADO_FINAL_2026-11-07.md`. (Lo que sigue de esta sección y la tabla «Estado actual (2026-11-03)» son históricos.)
+**Vigente (2026-11-13):** la entrega final es **Adopted v3** — invsqrt logshift2 (Q=139) + DQI omega/Karatsuba sin-t (Q=1,864, T=774,932) + dfthcsos lbfgs (65,60,60) — **Kaggle 3.42920** (ref 58289295, rank 2545/2940). Release [`v2026-11-13-final`](https://github.com/Inzainos/quantum-circuit-compilation/releases/tag/v2026-11-13-final) (rama `local/final-submission-2026-11-13` @ `79be129`, tag `v2026-11-13-final`); el asset `final_submission.zip` es el ZIP Adopted v3 (sha256 `83b0c75615274769a36d3822da2f8f5c63470dc59f6820bee516a0952c7b1c4d`, 66,674,933 B). Notebook público v5: https://www.kaggle.com/code/elnzainoscorona/verifiable-quantum-circuit-compilation (kernel 144639626, sesión COMPLETE, 0 errores). Nota: el `submission/final_submission.zip` dentro de `main` sigue siendo el anterior a la adopción; el PR de la rama final a `main` y la selección final en Kaggle están pendientes de decisión. (La tabla «Estado actual (2026-11-03)» es histórica; ver «Estado actual (2026-11-13)».)
 Los circuitos y datasets sueltos (`.kmb`, `.kmx`, `.npz`, `.fcidump`), el entorno
 virtual y la copia local del paper no se versionan (`.gitignore`): algunos superan
 el límite de 100 MiB por archivo de GitHub. Cada nuevo commit del ZIP infla el
@@ -119,7 +119,19 @@ zip válido. El último zip válido está en el commit `fb4e95b` (`git show fb4e
 Antes de enviar a Kaggle, corre los tres verificadores sobre los archivos exactos del zip.
 
 
-## Estado actual (2026-11-03) — solo cifras verificadas con los verificadores oficiales
+## Estado actual (2026-11-13) — Adopted v3 (final)
+
+| Tarea | Circuito | Score / resultado | Verificación |
+|-------|----------|-------------------|--------------|
+| invsqrt | logshift2, deg=2, j=8, wc=28, dd=13, sesgo=1 (`src/invsqrt_logshift2.py`) | Q=139, T=2,561, **score 390,005.06** | PASS verificador oficial, dominio completo (200,540,928 tiradas), error peor 0.7920 de la tolerancia |
+| dqi | omega/Karatsuba sin-t, Q=1,864, T=774,932 (`src/dqi_decoder_v1.py` + `src/dqi_kmul.py`) | ratio 7.48977× | PASS oficial Gold, 102,400 tiradas (2 errores de valor, 0 de fase) |
+| dfthcsos | lbfgs (65,60,60), brot=12, J=8 | Q=730, T=93,237, **score 3,336,160,975** | PASS oficial, error₂ 19.371 mHa, λ_eff 49.0158 |
+
+- **Geomean calculado 3.42645×; Kaggle medido 3.42920** (ref 58289295, rank 2545/2940). Descripción canónica: "Adopted v3: logshift2 invsqrt (Q=139) + DQI omega/Karatsuba without t (Q=1864, T=774932) + lbfgs dfthcsos; calc geomean 3.42645x; DQI gold-verified 102400 shots PASS (2 value errors, 0 phase)".
+- El envío v4 (ref 58329687, 3.42257, −0.19 %) solo cambió dfthcsos y no es el final.
+- **Trabajo en curso — fusión de motores kickmix (monomios + polinomios):** investigación y retro conjunta en el CHANGELOG (2026-11-13). El fixup MBU del emisor de monomios está medido y funciona en scratch; su aplicación al código real está pendiente de decisión. La fusión irá en el notebook v6.
+
+## Estado actual (2026-11-03) — histórico, solo cifras verificadas con los verificadores oficiales
 
 | Tarea | Circuito | Score / resultado | Verificación |
 |-------|----------|-------------------|--------------|

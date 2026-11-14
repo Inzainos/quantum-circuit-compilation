@@ -6,6 +6,40 @@ Dates are local time (UTC-6, México).
 
 ---
 
+## [Unreleased] - 2026-11-13 — Release final cruzado, notebook v5 y motores kickmix
+
+### Release `v2026-11-13-final` cruzado y corregido
+- El Release se publicó primero con el ZIP v4 y números mezclados; se cruzó contra Kaggle/GitHub y se corrigió el mismo día.
+- Asset `final_submission.zip` reemplazado por el ZIP Adopted v3 (sha256 `83b0c75615274769a36d3822da2f8f5c63470dc59f6820bee516a0952c7b1c4d`, 66,674,933 B); notas del Release corregidas.
+- Rama `local/final-submission-2026-11-13` @ `79be129`: doc corregido (commit `01c4c33`) + ambos ZIPs de `submission/` reemplazados por el Adopted v3 (commit `79be129`); tag `v2026-11-13-final` movido a `79be129`.
+- Kaggle medido: **3.42920** (ref 58289295, rank 2545/2940). El ZIP v4 (ref 58329687, 3.42257, −0.19 %) solo cambió dfthcsos y no es el final.
+- Pendiente (decisión de Elán): PR de la rama a `main` y marcar la selección final en Kaggle (ref 58289295).
+
+### Notebook v5 publicado
+- https://www.kaggle.com/code/elnzainoscorona/verifiable-quantum-circuit-compilation — versión 5, kernel 144639626, público, sesión COMPLETE, 48 entradas, 0 Traceback.
+- Documenta el final cruzado (Adopted v3, 3.42920, Release `v2026-11-13-final`) + el experimento v4 + los motores kickmix como trabajo abierto (§9). La fusión de motores irá en la v6.
+
+### Motores kickmix — investigación completada
+- Reporte: `qcc-data/kickmix-motor/INVESTIGACION_MOTOR_KICKMIX.md`.
+- En kickmix no hay motores separados de monomios y de polinomios: un solo juego de primitivas; los "motores" son patrones de uso, cada uno con su entrada.
+- logshift2 (producción) no tiene el problema: `NormalizarLog` y `HornerEstrecho` usan `init_and`/`del_and` en espejo, el patrón canónico.
+- El fixup MBU del emisor de monomios (`PolyPhaseBuilder.emit_monomial`, `invsqrt_poly.py:110-137`) está mal: `Z(q0)` tras HMR en vez del monomio como puerta de fase (`CZ` grado 2 / `del_and` en espejo). Medido: fixup actual falla 34/64 semillas; `CZ` 0/64; `del_and` 0/64 en grados 2 y 3, 0 Toffolis y 0 qubits extra.
+- La métrica de fase de la tubería de monomios era ciega a π: `read_shot_phase` devuelve medias vueltas (módulo 2) y la métrica usaba `% 1.0`.
+- `gf2_phase_by_product` es el motor de polinomios: fase del producto directo, 0 Toffolis, 0 ancilas; espera (factores + máscara clásica + campo). Solo en variantes experimentales de DQI; no en producción ni en invsqrt.
+
+### Retro conjunta Auditor Interno + Analista de datos
+- Informe: `auditoria/RETRO_CONJUNTA_MOTORES_2026-11-13.md`.
+- H-M1 fixup `Z(q0)` mal (confirmado); H-M2 métrica ciega a π (10 archivos usan `read_shot_phase`); H-M3 el Nivel 1 de Datos depende de `emit_phase_bit`, con el mismo patrón roto — solo vale tras arreglarlo y medirlo.
+- **C-1 (crítica): "las rotaciones NO cuentan" es FALSO.** Medido: `z_pow` de nivel 3 cuesta 1 T-like (`z_pow(0.5)+z_pow(0.25)` → `num_t_like=1`); la fórmula oficial (`verify_submission_invsqrt.py:303-328`) suma `num_t_like` + síntesis por rotación de nivel ≥ 4. Prueba: V34 T-like 28 = sus 28 `z_pow` de nivel 3; logshift2 T-like 1 = su única rotación de nivel 3. La fusión debe presupuestar la síntesis de rotaciones; ninguna rotación arbitraria es gratis.
+- Entrada óptima: polinomio entero en una llamada `(lhs, rhs, mask)` donde la fase lo admita, o tabla QROM + Horner donde no; forma de intercambio = ANF por bit de fase (51 rotaciones, 1,514 monomios). Tabla de fusión §E y movimientos §G (sin aplicar).
+
+### Experimento del fixup completado
+- Reporte: `qcc-data/kickmix-motor/experimento-fixup/EXPERIMENTO_FIXUP_REPORTE.md`.
+- El fixup funciona: la tubería corregida da error 0.0 exacto, 0 errores π, en las 8 corridas, con el mismo coste (Q=43, 134 ANDs, C=829.75). La tubería original está rota de verdad (falla 34–36/63 tiros por exactamente π; el "9.57e-07 tol" publicado era falso positivo de la métrica ciega).
+- `emit_phase_bit` también arreglado y medido: 0/9,792 errores π en las 51 rotaciones reales (antes 2,325, 23.7 %).
+- Hallazgo nuevo: `del_and` usa siempre el bit clásico `b0` para su HMR interno; el fix del §8 tal cual dejaba 265/9,792 errores π por aliasing — la corrección (reservar b0, bits HMR explícitos desde b1) lo deja en 0.
+- El fix vive solo en scratch (`invsqrt_poly_fixed.py`, sha `8f208b59…`); no aplicado al código real — decisión de Elán pendiente. Verificador oficial no aplicable a la tubería como tal (circuito de fase, no entrega invsqrt); no se afirma mejora de score.
+
 ## [Unreleased] - 2026-10-27 — Estado inicial documentado
 
 ### Added
