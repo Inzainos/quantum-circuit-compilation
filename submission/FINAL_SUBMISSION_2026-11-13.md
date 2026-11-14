@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-11-13  
 **Rama:** `local/final-submission-2026-11-13`  
-**Commit:** (pendiente)  
+**Commit:** ver tag `v2026-11-13-final`  
 **Autor:** Elán Zainos Corona (Fractal Core Research)
 
 ---
@@ -15,7 +15,7 @@ Entrega final para la competición **Google Quantum AI - Verifiable Quantum Circ
 |-----------|----------|----------|---------------------|
 | **invsqrt** (Fusión) | `logshift2` (deg=2, j=8, wc=28, dd=13) | Q=139, T=2,561, Score=390,005.06 | ✅ **PASS** (200,540,928 shots) |
 | **DQI** (Optimización) | `omega/Karatsuba` (sin t, fusión + E1d) | Q=1,864, T=774,932, Score=3.235×10¹² | ✅ **PASS** (102,400 tiros, gold) |
-| **dfthcsos** (Química) | `lbfgs` (65,60,60, brot=12, J=8) | Q=730, T=93,237, Score=3.356×10⁹ | ✅ **PASS** (254,464 tiros) |
+| **dfthcsos** (Química) | `lbfgs` (65,60,60, brot=12, J=8) | Q=730, T=93,237, Score=3.336×10⁹ | ✅ **PASS** (254,464 tiros) |
 
 **Geomean calculado:** ~3.43×  
 **Kaggle medido (ref 58289295):** **3.42920** (nuevo personal best, +0.37% vs anterior 3.41660)
@@ -25,8 +25,8 @@ Entrega final para la competición **Google Quantum AI - Verifiable Quantum Circ
 ## Archivo de Entrega
 
 **ZIP:** `submission/final_submission.zip`  
-**SHA256:** `604e55f38ba71a3e5f7106d5f162eec6593d378c5f1952e19dbcdbaba1611ef8`  
-**Tamaño:** 652,995,658 bytes (622 MB)  
+**SHA256:** `83b0c75615274769a36d3822da2f8f5c63470dc59f6820bee516a0952c7b1c4d`  
+**Tamaño:** 66,674,933 bytes (63.6 MB comprimido; 659,187,615 bytes / 629 MB sin comprimir)  
 **Estructura:** 13 archivos
 
 ```
@@ -34,7 +34,7 @@ final_submission.zip
 ├── invsqrt.kmb                    (437 KB)   — logshift2
 ├── dqi.kmb                        (629 MB)   — omega/Karatsuba
 └── dfthcsos/
-    ├── angle_k_0.kmb .. angle_k_9.kmb  (10 circuitos)
+    ├── angle_k_0.kmx .. angle_k_9.kmx  (10 circuitos)
     └── submission.npz            (4.5 MB)  — factorización lbfgs
 ```
 
@@ -68,16 +68,15 @@ final_submission.zip
 ### dfthcsos — Quantum Chemistry (FeMoCo)
 - **Circuito:** `lbfgs` (65,60,60, brot=12, J=8, batch=8)
 - **Factorización:** `submission.npz` (U, W, H2_I, H1_I, Hsym_lower + tree_edges)
-- **SHA256 submission:** `276d464ff14da828b6b33e8487d99975494cbdf0c3cb2bd37dd3c3ddc4002695`
+- **SHA256 submission:** `d89772be6b4b8484cc090ea065baf61c0f8cedc2ad0e6689106c44ef87b7fa4d`
 - **Verificador:** `verifiers.dfthcsos.verify`
 - **Shots:** 254,464 (verificación completa)
 - **Resultado:** **PASS**
-  - Score: 3,355,599,588
+  - Score: 3,336,160,975
   - Q=730, T=93,237
-  - error_1: 3.185 mHa (< 20 mHa ✅)
-  - error_2: 18.640 mHa (< 20 mHa ✅)
-  - Lambda: 308.46, E_gap: 3.965 Ha (gap in domain ✅)
-  - lambda_eff: 49.301
+  - error_1: 3.340 mHa (< 20 mHa ✅)
+  - error_2: 19.371 mHa (< 20 mHa ✅)
+  - Lambda: 308.361, lambda_eff: 49.0158
 
 ---
 
@@ -87,7 +86,7 @@ final_submission.zip
 |---------|---------|-----|----------|---------|
 | **Q** | 139 | 1,864 | 730 | — |
 | **T** | 2,561 | 774,932 | 93,237 | — |
-| **Score** | 390,005 | 3.235×10¹² | 3.356×10⁹ | — |
+| **Score** | 390,005 | 3.235×10¹² | 3.336×10⁹ | — |
 | **Ratio vs baseline** | 5.31× | 7.49× | 1.01× | **~3.43×** |
 | **Kaggle score** | — | — | — | **3.42920** |
 
@@ -119,7 +118,7 @@ final_submission.zip
 
 | Archivo | Descripción |
 |---------|-------------|
-| `submission/final_submission.zip` | **Entrega final (622 MB)** — 13 archivos, SHA `604e55f3...` |
+| `submission/final_submission.zip` | **Entrega final (66,674,933 B)** — 13 archivos, SHA `83b0c756...` |
 | `submission/FINAL_SUBMISSION_2026-11-13.md` | Este documento |
 | `verifiers/invsqrt/verify_submission_invsqrt.py` | Verificador oficial invsqrt (sin cambios) |
 | `verifiers/dqi/verify_submission_dqi.py` | Verificador oficial DQI (sin cambios) |
@@ -159,10 +158,15 @@ cd /home/deamon/quantum-circuit-compilation
 ## Próximos Pasos
 
 1. [ ] Marcar selección final en Kaggle (ref 58289295)
-2. [ ] Push a GitHub (`git push origin local/final-submission-2026-11-13`)
-3. [ ] PR a `main/quantum-circuit-compilation-v0.1.0` (merge limpio probado)
+2. [x] Push a GitHub (`git push origin local/final-submission-2026-11-13`)
+3. [ ] PR a `main` (merge limpio probado)
 
 ---
 
 **Firmado:** Elán Zainos Corona — Fractal Core Research  
 **Fecha:** 2026-11-13
+
+*Nota de corrección (Mole, 2026-11-13 ~22:05): la primera versión de este doc citaba el SHA
+y el tamaño del ZIP v4 (ref 58329687, 3.42257) con el score del Adopted v3; corregido a los
+datos del Adopted v3 verificado (SHA 83b0c756..., 66,674,933 B, angle_k .kmx, score 3.42920,
+ref 58289295). El asset del Release v2026-11-13-final también se reemplazó por el ZIP Adopted v3.*
