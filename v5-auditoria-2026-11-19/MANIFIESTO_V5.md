@@ -8,6 +8,8 @@ Fecha: 2026-11-19. Rama: `local/v5-auditoria-2026-11-19`, base `main` 64d4cec. O
 - `givens/` — Alcance del árbol de Givens O7 (en construcción por Programación; el trabajo es el MODELO, no un circuito).
 - `recomendacion-conjunta/` — Recomendación conjunta de adopción + revisión del Auditor.
 - `verificacion-v5/` — Verificación Brujo QF + lbfgs para v5 (este informe).
+- `todo2/`, `todo4/` — TODO-2 (paso de Horner ventana, DESCARTADO por medición) y TODO-4 (rediseño del lookup, DESCARTADO por medición), cadena completa cada uno. TODO-2: el +4.8–7.1% era el ESTIMADO; la medición dio +35.77% (NO PASA); solo sobrevive la micro-opt de 2 ventanas (−0.57%). TODO-4: mejor variante V1b +0.77% (NO PASA por 1.09 qubits).
+- `r1r5/codigo/` — **Reproducibilidad de R1+R5 (hueco señalado por Claude, auditor externo).** `r1r5.diff` (280 l., md5 `89f92cefa16419c975fd4db949657be8`) + los 4 archivos modificados. El diff aplica limpio sobre el `src/` baseline (sin `trunc_low`) y reproduce los 4 archivos BYTE-IDÉNTICOS. Archivos: `invsqrt_bloqs.py` (CopiaC0/FasePorBits, `trunc_low`), `invsqrt_halfsplit.py` (PipelineMitad, `trunc_low`), `invsqrt_logshift.py` (DesnormLog, `fold_copy`+`trunc_low`, `_copia_c0`), `invsqrt_logshift2.py` (PipelineLog2 + CLI, flags `--r1`/`--r5`).
 
 ## Números clave (todos medidos, cadena completa)
 - **invsqrt R1+R5 (adoptado):** Q=139, T=2,561, score 389,261.01, Gold PASS (200,540,928 shots). `invsqrt_R1R5.kmb` sha256 `a30a1298…` — byte-idéntico a R1.

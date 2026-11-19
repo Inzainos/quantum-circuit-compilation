@@ -1,0 +1,280 @@
+--- a/src/invsqrt_bloqs.py
++++ b/src/invsqrt_bloqs.py
+@@ -141,8 +141,9 @@
+     nombre = "copy_c0"
+     consume = ("coef", "y1")
+ 
+-    def __init__(self, spec: PWSpec, w: list[int], offs: list[int]):
++    def __init__(self, spec: PWSpec, w: list[int], offs: list[int], trunc_low: bool = False):
+         self.spec, self.w, self.offs = spec, w, offs
++        self.trunc_low = trunc_low
+ 
+     def adapta(self, bits):
+         self._exige(bits, "y1", self.spec.wc)
+@@ -150,7 +151,15 @@
+             raise ErrorAncho(self.nombre, "y1", self.w[0], self.spec.wc)
+ 
+     def aplica(self, b, R, inverse):
+-        b.cx(R["coef"][self.offs[0]:self.offs[0] + self.w[0]], R["y1"][:self.spec.wc])
++        if self.trunc_low:
++            # R1 (2026-11-19, prototipo espiral Fase 1): y1 nace sin bit 0 — se
++            # copia c0[1:] a y1[1:] y y1[0] queda en |0>. CX es autoinverso, asi
++            # que el adjunto (vuelta) deshace exactamente lo mismo. La fase
++            # recibe y1[1:] y el ahorro de 1 rotacion es estructural.
++            b.cx(R["coef"][self.offs[0] + 1:self.offs[0] + self.w[0]],
++                 R["y1"][1:self.w[0]])
++        else:
++            b.cx(R["coef"][self.offs[0]:self.offs[0] + self.w[0]], R["y1"][:self.spec.wc])
+ 
+ 
+ class Desnormalizar(Fase):
+@@ -172,8 +181,16 @@
+     nombre = "phase"
+     consume = ("y1",)
+ 
++    def __init__(self, skip_low: bool = False, trunc_low: bool = False):
++        self.skip_low = skip_low
++        self.trunc_low = trunc_low
++
+     def aplica(self, b, R, inverse):
+-        _phase_by_bits(b, R["y1"])
++        # R1 (2026-11-19): con trunc_low, y1[0] no existe (es |0> estructural);
++        # la fase recibe y1[1:] y los angulos quedan identicos a B (skip_low):
++        # el desplazamiento del arreglo compensa el de 2^(j-f+1) en _phase_by_bits.
++        y = R["y1"][1:] if self.trunc_low else R["y1"]
++        _phase_by_bits(b, y, skip_low=self.skip_low)
+ 
+ 
+ class Pesada(Fase):
+--- a/src/invsqrt_halfsplit.py
++++ b/src/invsqrt_halfsplit.py
+@@ -40,10 +40,11 @@
+ 
+ 
+ @functools.lru_cache(maxsize=None)
+-def tabla_mitad(spec: PWSpec, sesgo: int = 0) -> tuple[list[list[int]], list[int]]:
++def tabla_mitad(spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0)) -> tuple[list[list[int]], list[int]]:
+     """b[i][addr], w[i]. addr = f + sel*2^j, sel=1 -> M<2 (factor 1), sel=0 -> M>=2 (factor 1/sqrt2).
+ 
+     `sesgo` resta ese numero de ulps (2^-wc) a a0: compensa el sesgo positivo de los pisos (c>>m) de Horner.
++    `trunc` (B+C, C): pone a 0 los bits bajos de c1/c2 — trunc[0] bits de b[1], trunc[1] bits de b[2].
+     """
+     d, j, wc = spec.deg, spec.j, spec.wc
+     h = 2.0 ** -j
+@@ -65,6 +66,11 @@
+                 if i == 0:
+                     mag = min(max(mag - sesgo, 0), 2 ** wc - 1)
+                 b[i][f + (sel << j)] = mag
++    # B+C (C): poner a 0 los bits bajos de c1/c2 (trunc[0] bits de b[1], trunc[1] bits de b[2]).
++    for ci, k in ((1, trunc[0]), (2, trunc[1])):
++        if k:
++            mask = ~((1 << k) - 1)
++            b[ci] = [v & mask for v in b[ci]]
+     w = [max(max(row).bit_length(), 1) for row in b]
+     return b, w
+ 
+@@ -138,9 +144,13 @@
+     nombre = "lookup"
+     consume = ("x", "sel", "coef")
+ 
+-    def __init__(self, spec: PWSpec, sesgo: int = 0):
++    def __init__(self, spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0)):
+         self.spec = spec
+-        self.b, self.w = tabla_mitad(spec, sesgo)
++        self.b, self.w = tabla_mitad(spec, sesgo, trunc)
++        # B+C (C): bits de coeficiente muertos en toda la tabla (tras truncar).
++        self.dead = {ci: frozenset(t for t in range(self.w[ci])
++                                   if all(((v >> t) & 1) == 0 for v in self.b[ci]))
++                     for ci in range(1, spec.deg + 1)}
+         self.offs = [sum(self.w[:i]) for i in range(spec.deg + 1)]
+         self.table = [sum(self.b[i][a] << self.offs[i] for i in range(spec.deg + 1))
+                       for a in range(1 << (spec.j + 1))]
+@@ -160,8 +170,9 @@
+     nombre = "horner"
+     consume = ("x", "coef", "scratch")
+ 
+-    def __init__(self, spec: PWSpec, w: list[int], offs: list[int]):
++    def __init__(self, spec: PWSpec, w: list[int], offs: list[int], dead=None):
+         self.spec, self.w, self.offs = spec, w, offs
++        self.dead = dead or {}
+ 
+     def adapta(self, bits):
+         self._exige(bits, "scratch", max(self.w))
+@@ -177,20 +188,32 @@
+         with b.mark(self.nombre):
+             for i in order:
+                 for m, ctl in (reversed(u_ctl) if inverse else u_ctl):
+-                    terms = [(c[i + 1][t], t - m) for t in range(m, w[i + 1])]
++                    # B+C (C): omitir los términos cuyo bit fuente es 0 en toda la tabla.
++                    # CORRECCIÓN (sonda 2026-11-14): el filtro SOLO vale para la fila
++                    # i == deg-1, cuya fuente es el coeficiente TOPE c[deg], que el
++                    # Horner nunca modifica. Las filas i < deg-1 leen c[i+1]' — el
++                    # INTERMEDIO tras la fila i+1 — y sus bits NO son los de la tabla:
++                    # p. ej. c1'[1] = prod1[0] XOR prod1[1] = 1 en x=2824959 y x=234495
++                    # aunque c1[1] = 0 en toda la tabla truncada. Filtrar ahí resta 1
++                    # de menos en c0 (y1 +1 ulp, +2^s tras desnormalizar; C medía
++                    # 0.9177 @ 2824959 en vez del clásico 0.8823). Por eso el ahorro
++                    # real de C es 4 T (solo c2), no 8 T.
++                    dead_i = self.dead.get(i + 1, ()) if i == s.deg - 1 else ()
++                    terms = [(c[i + 1][t], t - m) for t in range(m, w[i + 1])
++                             if t not in dead_i]
+                     if terms:
+                         _add_row(b, inverse, ctl, terms, c[i], R["scratch"], subtract=True)
+ 
+ 
+ class PipelineMitad:
+-    def __init__(self, spec: PWSpec, sesgo: int = 0):
++    def __init__(self, spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0), skip_low: bool = False, trunc_low: bool = False):
+         self.spec = spec
+-        t = TablaLookupMitad(spec, sesgo)
++        t = TablaLookupMitad(spec, sesgo, trunc)
+         self.w, self.offs = t.w, t.offs
+         self.fases: list[Fase] = [Normalizar(spec), GiroMitad(spec), t,
+-                                  HornerMitad(spec, t.w, t.offs),
+-                                  CopiaC0(spec, t.w, t.offs), Desnormalizar(spec)]
+-        self.media = FasePorBits()
++                                  HornerMitad(spec, t.w, t.offs, t.dead),
++                                  CopiaC0(spec, t.w, t.offs, trunc_low), Desnormalizar(spec)]
++        self.media = FasePorBits(skip_low, trunc_low)
+ 
+     def anchos(self) -> dict[str, int]:
+         s = self.spec
+--- a/src/invsqrt_logshift.py
++++ b/src/invsqrt_logshift.py
+@@ -53,11 +53,23 @@
+     nombre = "denormalize_log"
+     consume = ("sb", "y1")
+ 
+-    def __init__(self, spec: PWSpec):
++    def __init__(self, spec: PWSpec, w=None, offs=None, fold_copy: bool = False, trunc_low: bool = False):
+         self.spec = spec
++        # R5 (2026-11-19): copy_c0 plegado en denorm (PipelineLog2 --r5).
++        # w/offs son los anchos/offsets de los coeficientes (como CopiaC0);
++        # solo se usan cuando fold_copy=True. Sin el flag, comportamiento
++        # idéntico al original (PipelineLog no se toca).
++        # R1+R5 (2026-11-19): con trunc_low=True, la truncación de R1 (que
++        # vivía en CopiaC0, eliminada por R5) se re-ubica en esta copia
++        # plegada: se copia c0[1:] a y1[1:] (27 CX) y y1[0] queda en |0>.
++        self.w, self.offs, self.fold_copy, self.trunc_low = w, offs, fold_copy, trunc_low
++        if fold_copy:
++            self.consume = ("sb", "y1", "coef")
+ 
+     def adapta(self, bits):
+         self._exige(bits, "y1", self.spec.out_bits)
++        if self.fold_copy and self.w[0] > self.spec.wc:
++            raise ErrorAncho(self.nombre, "y1", self.w[0], self.spec.wc)
+ 
+     def _longitudes(self):
+         wc, out = self.spec.wc, self.spec.out_bits
+@@ -67,13 +79,35 @@
+             res.append(min(wc + cum, out))
+         return res
+ 
++    def _copia_c0(self, b, R):
++        """Copia CX c[0] -> y1 (la lógica de la antigua fase CopiaC0, 28 CX, 0 T).
++        La copia sigue siendo necesaria: denorm rota el carril y1 (hasta
++        out_bits) y los bits que salen por arriba de wc deben ser 0, no
++        envolver dentro de 28 bits; operar in situ sobre el slice c[0] de
++        coef sería incorrecto (el carril se saldría del slice y corrompería
++        c[1]). Fuera del mark, como la CopiaC0 original (sin mark).
++        R1+R5: con trunc_low, la truncación de R1 (que vivía en CopiaC0, ya
++        eliminada) se re-ubica aquí: se copia c0[1:] a y1[1:] (27 CX) y
++        y1[0] queda en |0>, igual que en CopiaC0 con trunc_low."""
++        if self.trunc_low:
++            b.cx(R["coef"][self.offs[0] + 1:self.offs[0] + self.w[0]],
++                 R["y1"][1:self.w[0]])
++        else:
++            b.cx(R["coef"][self.offs[0]:self.offs[0] + self.w[0]], R["y1"][:self.spec.wc])
++
+     def aplica(self, b, R, inverse):
++        # R5: ida = copia y luego rotaciones; vuelta = rotaciones inversas y
++        # luego copia (deshacer), orden inverso exacto de la ida.
++        if self.fold_copy and not inverse:
++            self._copia_c0(b, R)
+         largos = self._longitudes()
+         etapas = list(range(4))
+         with b.mark(self.nombre):
+             for bit in (reversed(etapas) if inverse else etapas):
+                 lane = R["y1"][:largos[bit]]
+                 (b.right_rotate if inverse else b.left_rotate)(lane, 1 << bit, control=R["sb"][bit])
++        if self.fold_copy and inverse:
++            self._copia_c0(b, R)
+ 
+ 
+ class PipelineLog(PipelineMitad):
+--- a/src/invsqrt_logshift2.py
++++ b/src/invsqrt_logshift2.py
+@@ -118,12 +118,23 @@
+ 
+ 
+ class PipelineLog2(PipelineMitad):
+-    def __init__(self, spec: PWSpec, sesgo: int = 0, estrecho: bool = False):
+-        super().__init__(spec, sesgo)
++    def __init__(self, spec: PWSpec, sesgo: int = 0, estrecho: bool = False,
++                 trunc: tuple[int, int] = (0, 0), skip_low: bool = False, trunc_low: bool = False, r5: bool = False):
++        super().__init__(spec, sesgo, trunc, skip_low, trunc_low)
+         self.estrecho = estrecho
++        # R5 (2026-11-19): sin --r5, pipeline idéntico al original (CopiaC0
++        # presente, DesnormLog sin copia). Con --r5, CopiaC0 sale de la lista
++        # y su copia CX vive dentro de DesnormLog (fold_copy=True).
++        # R1+R5 (2026-11-19): con --r1 --r5, la truncación de R1 (que vivía en
++        # CopiaC0) se re-ubica en la copia plegada (DesnormLog trunc_low=True).
++        self.r5 = r5
+         self.fases = [NormalizarLog(spec) if f.nombre == "normalize" else (HornerEstrecho(spec, f.w, f.offs) if (estrecho and f.nombre == "horner") else f)
+                       for f in self.fases if f.nombre != "denormalize"]
+-        self.fases.append(DesnormLog(spec))
++        if r5:
++            self.fases = [f for f in self.fases if f.nombre != "copy_c0"]
++            self.fases.append(DesnormLog(spec, self.w, self.offs, fold_copy=True, trunc_low=trunc_low))
++        else:
++            self.fases.append(DesnormLog(spec))
+ 
+     def anchos(self):
+         d = super().anchos()
+@@ -150,9 +161,15 @@
+         def libera(nombre):
+             b.free(R.pop(nombre))
+ 
++        # R5: el intercambio scratch/y1 se dispara en copy_c0 (original) o en
++        # denormalize_log (con --r5, cuando copy_c0 ya no está en la lista).
++        # Es el mismo punto del pipeline (tras Horner, antes de denorm) y el
++        # mismo orden de alloc/free, así que los índices de qubit no cambian.
++        swap = "denormalize_log" if self.r5 else "copy_c0"
++
+         # --- ida ---
+         for f in self.fases:
+-            if f.nombre == "copy_c0":
++            if f.nombre == swap:
+                 libera("scratch")
+                 asigna("y1")
+             if f.nombre == "horner":
+@@ -162,7 +179,7 @@
+         # --- vuelta ---
+         for f in reversed(self.fases):
+             f.aplica(b, R, True)
+-            if f.nombre == "copy_c0":
++            if f.nombre == swap:
+                 libera("y1")
+                 asigna("scratch")
+             if f.nombre == "horner":
+@@ -192,12 +209,18 @@
+     ap.add_argument("--wc", type=int, default=28)
+     ap.add_argument("--dd", type=int, default=13)
+     ap.add_argument("--sesgo", type=int, default=0)
++    ap.add_argument("--k1", type=int, default=0, help="B+C (C): bits bajos a 0 en c1")
++    ap.add_argument("--k2", type=int, default=0, help="B+C (C): bits bajos a 0 en c2")
++    ap.add_argument("--skip-low", action="store_true", help="B+C (B): quitar el z_pow bajo (bit 0 de y1)")
++    ap.add_argument("--r1", action="store_true", help="R1 (espiral Fase 1): y1 nace sin bit 0 (micro-tuberia bit 0 nativa; CopiaC0 trunca, FasePorBits recibe y1[1:])")
++    ap.add_argument("--r5", action="store_true", help="R5 (espiral Fase 1): eliminar copy_c0 (etapa fantasma); su copia CX c[0]->y1 vive dentro de denorm (DesnormLog fold_copy)")
+     ap.add_argument("--out", type=Path, default=None)
+     a = ap.parse_args()
+     spec = PWSpec(deg=a.deg, j=a.j, wc=a.wc, dd=a.dd)
+-    params = {"deg": a.deg, "j": a.j, "wc": a.wc, "dd": a.dd, "sesgo": a.sesgo}
++    params = {"deg": a.deg, "j": a.j, "wc": a.wc, "dd": a.dd, "sesgo": a.sesgo,
++              "k1": a.k1, "k2": a.k2, "skip_low": a.skip_low, "r1": a.r1, "r5": a.r5}
+     t0 = time.time()
+-    circ = PipelineLog2(spec, a.sesgo).construye()
++    circ = PipelineLog2(spec, a.sesgo, trunc=(a.k1, a.k2), skip_low=a.skip_low, trunc_low=a.r1, r5=a.r5).construye()
+     q = int(circ.num_qubits)
+     t_toff = int(circ.operation_statistics().num_toffoli_like)
+     log.info("circuito: Q=%d T=%d", q, t_toff)
