@@ -16,7 +16,7 @@ import logging
 from typing import List, Sequence
 import kickmix as km
 import dqi_bm_model as GM
-from dqi_kmul import ixor_kmul
+from dqi_kmul42 import ixor_kmul42 as ixor_kmul  # SWAP42: Toom-4 42 T en lugar de Karatsuba 54 T
 from dqi_tower_inv3 import ValueInv3 as ValueInv
 
 log = logging.getLogger("dqi_bm_v1")
