@@ -24,7 +24,7 @@ except Exception:  # noqa: BLE001 - logging opcional; el circuito no depende de 
 import kickmix as km
 import dqi_bm_model as G
 from dqi_bm_stage_v1 import BMStageV1
-from dqi_kmul import ixor_kmul  # OMEGA-KARATSUBA: Karatsuba 54 T en lugar del ctor 63 T
+from dqi_kmul42 import ixor_kmul42 as ixor_kmul  # SWAP42: Toom-4 42 T en lugar de Karatsuba 54 T
 from dqi_omega_stage import build_omega
 from dqi_tower_inv3 import ValueInv3 as ValueInv
 from dqi_scan_stage import _linear_sources, _emit_linear, _alpha_pow_bits
