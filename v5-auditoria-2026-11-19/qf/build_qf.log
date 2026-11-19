@@ -1,0 +1,15 @@
+modulos: dqi_bm_stage_v1=/home/deamon/quantum-circuit-compilation-qf/src/dqi_bm_stage_v1.py
+modulos: bm_fused=/home/deamon/quantum-circuit-compilation-qf/src/bm_fused.py
+modulos: bm_fused_e1d=/home/deamon/quantum-circuit-compilation-qf/src/bm_fused_e1d.py
+modulos: dqi_decoder_v1=/home/deamon/quantum-circuit-compilation-qf/src/dqi_decoder_v1.py
+[bm_forward] live_frontera=1794
+[omega_fwd] live_frontera=1794
+[scan] live_frontera=1794
+[omega_rev] live_frontera=1794
+[bm_reverse] live_frontera=1724
+TOTAL QF Q=1857 T=710312 en 136s
+SWAP42 (referencia): Q=1864 T=710312
+Delta Q=-7 Delta T=0 (esperado Delta Q=-7 Delta T=0)
+DQI ratio nuevo = 8.16189x
+geomean calculado = 3.52162x ; geomean escalando Kaggle 3.42920x = 3.53019x
+guardado /home/deamon/workspace/qcc-data/claude-qf/dqi_qf.kmb sha256=38b9cbf0e2f552b22bd1b36ccc2a1d781e455a0ae058e78db0b5a95f77a6ae13

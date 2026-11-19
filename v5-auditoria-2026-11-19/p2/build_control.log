@@ -1,0 +1,16 @@
+modulos: dqi_bm_stage_v1=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/src/dqi_bm_stage_v1.py
+modulos: bm_fused=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/src/bm_fused.py
+modulos: bm_fused_e1d=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/src/bm_fused_e1d.py
+modulos: dqi_decoder_v1=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/src/dqi_decoder_v1.py
+modulos: dqi_kmul42=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/src/dqi_kmul42.py
+[bm_forward] live_frontera=1794
+[omega_fwd] live_frontera=1794
+[scan] live_frontera=1794
+[omega_rev] live_frontera=1794
+[bm_reverse] live_frontera=1724
+TOTAL P2 Q=1864 T=710312 en 137s
+PRODUCCION (omega/Karatsuba): Q=1864 T=774932
+Delta Q=0 Delta T=-64620 (proyectado Delta Q=0 Delta T=-64620)
+DQI ratio nuevo = 8.16189x
+geomean calculado = 3.52162x ; geomean escalando Kaggle 3.42920x = 3.53019x
+guardado /home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p2/dqi_p2_control.kmb sha256=746271d961a74cf224dcfdc73e76a7c77da3c1803d6e9341b14f805ecf4a2603

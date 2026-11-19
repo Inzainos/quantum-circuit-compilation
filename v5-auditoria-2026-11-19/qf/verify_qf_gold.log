@@ -1,0 +1,48 @@
+=== GOLD QF Q=1857 T=710312 --seed fijo (seed swap42) ===
+Thu Nov 19 02:06:51 PM CST 2026
+38b9cbf0e2f552b22bd1b36ccc2a1d781e455a0ae058e78db0b5a95f77a6ae13  /home/deamon/workspace/qcc-data/claude-qf/dqi_qf.kmb
+seed=52642227205936912575373656611044064096114070193057152544535209180255000077827
+{
+  "status": "PASS",
+  "score": 2971470537625.3,
+  "m": 4095,
+  "n": 70,
+  "degree": 12,
+  "r": 2016,
+  "verified_shots": 102400,
+  "value_errors": 5,
+  "phase_errors": 0,
+  "empirical_error_rate": 4.8828125e-05,
+  "effective_error_rate": 0.0010479495500463395,
+  "log2_delta": -128.0,
+  "repetition_factor": 1.2131052140444296,
+  "mean_error_weight": 31.046737331746634,
+  "toffoli_count": 710312.0,
+  "max_toffoli_count": 710312,
+  "reaction_depth": 3154,
+  "num_ops": 72168849,
+  "shot_operation_counts": {
+    "NEG": 7169143,
+    "BIT_INVERT": 1118119630,
+    "BIT_STORE0": 1695125487,
+    "BIT_STORE1": 1293798487,
+    "X": 11383398400,
+    "Z": 1387012850,
+    "R": 10311168000,
+    "HMR": 24181248000,
+    "CX": 6535702323200,
+    "CZ": 159946096370,
+    "SWAP": 387072000,
+    "CSWAP": 3951820800,
+    "CCX": 68784128000,
+    "INFO_TAG": 1527193600,
+    "POP_CONDITION": 202206924800,
+    "PUSH_CONDITION": 202206924800
+  },
+  "num_qubits": 1857,
+  "num_bits": 198813,
+  "circuit_sha256": "38b9cbf0e2f552b22bd1b36ccc2a1d781e455a0ae058e78db0b5a95f77a6ae13"
+}
+exit_gold=0
+=== FIN ===
+Thu Nov 19 02:19:01 PM CST 2026

@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""Decodificador DQI completo v1 (BM + omega in place + barrido con inversion por posicion).
+
+  BM (v1, sin basura)  ->  sigma, tau, d, H
+  delta = sigma_0^-1 (andamiaje persistente durante omega)  ->  omega in place sobre S (etapa C)
+  barrido por posicion p (r = alpha^-p):  s=sigma(r), dd=sigma'(r), u=omega(r) lineales; f=[s==0];
+        w = dd^-1 (inversion con andamiaje, 315 Toffoli, del gratis); fase (-1)^{f * Tr(mu(M_p) u w)}   (Forney: e = omega/sigma')
+  luego se deshace todo en orden inverso.
+Esta version reemplaza Psi=(sigma')^-1 mod sigma (EEA) por inversion por posicion; la etapa B (EEA) es la mejora pendiente.
+Logs: logger 'dqi_decoder'; etiquetas INFO_TAG: scan_pos, omega_fwd/rev, bm_*.
+"""
+from __future__ import annotations
+import sys, logging
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+if str(ROOT / "tools") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tools"))
+try:
+    from qcc_log import emit as _qcc_emit
+    _HAS_QCC_LOG = True
+except Exception:  # noqa: BLE001 - logging opcional; el circuito no depende de el
+    _HAS_QCC_LOG = False
+import kickmix as km
+import dqi_bm_model as G
+from dqi_bm_stage_v1 import BMStageV1
+from dqi_kmul42 import ixor_kmul42 as ixor_kmul  # SWAP42: Toom-4 42 T en lugar de Karatsuba 54 T
+from dqi_omega_stage import build_omega
+from dqi_tower_inv3 import ValueInv3 as ValueInv
+from dqi_scan_stage import _linear_sources, _emit_linear, _alpha_pow_bits
+from dqi_tower_inv import CCOLS
+from dqi_tower_inv3 import TowerInv3 as TowerInv
+
+log = logging.getLogger("dqi_decoder")
+DEG = 12
+
+
+def _to_coords(srcs):
+    """fuentes de cada bit de valor -> fuentes (paridad) de cada coordenada de torre."""
+    out = []
+    for o in range(DEG):
+        par = {}
+        for k in range(DEG):
+            if (CCOLS[k] >> o) & 1:
+                for q in srcs[k]:
+                    par[q] = par.get(q, 0) ^ 1
+        out.append([q for q, v in par.items() if v])
+    return out
+
+
+def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
+    n_pos = len(E)
+    positions = range(min(n_pos, G.Q - 1)) if positions is None else positions
+    apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
+    # Reutilizar registros entre posiciones para reducir overhead de alloc/free
+    s = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
+    tmp = b.alloc_qubits(1)[0]; f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(1)[0]   # un solo qubit para el AND de fase (se usa de a uno)
+    for p in positions:
+        r = _alpha_pow_bits(-p)
+        with b.mark('scan_pos'):
+            pw = [1]
+            for i in range(1, max(len(sig), len(om))):
+                pw.append(G.mul(pw[-1], r))
+            src_s = _linear_sources(pw[:len(sig)], sig)
+            src_u = _linear_sources(pw[:len(om)], om)
+            dco = [pw[i - 1] if i % 2 == 1 else 0 for i in range(len(sig))]
+            src_d = _linear_sources(dco, sig)
+            if tower:
+                src_d = _to_coords(src_d)
+            _emit_linear(b, src_s, s)
+            b.x(s)
+            b.init_and(s[0], s[1], lad[0])
+            for i in range(2, DEG - 1):
+                b.init_and(lad[i - 2], s[i], lad[i - 1])
+            b.init_and(lad[DEG - 3], s[DEG - 1], f)
+            _emit_linear(b, src_d, dd)
+            if tower:
+                TI = TowerInv(b, dd, w); TI.forward()
+            else:
+                _, scaf = b.init_gf2_inverse_with_scaffold(dd, target=w, field=field)
+            # fase: (-1)^{ sum_a (f & u_a) * t_a },  t_a = sum_k E[p][k] * sum_{b in srcs(a,k)} w_b
+            # sin registros t ni u: u_a se forma en un solo qubit 'tmp' y la fase se aplica con CZ(g_a, w_b) condicionados a E[p][k]
+            for a in range(DEG):
+                for q in src_u[a]:
+                    b.cx(q, tmp)
+                b.init_and(f, tmp, g)
+                for k in range(DEG):
+                    srcs = [w[bb] for bb in range(DEG) if (apow[a + bb] >> k) & 1]
+                    if srcs:
+                        b.push_condition(E[p][k])
+                        b.cz(km.array(srcs), km.array([g] * len(srcs)))
+                        b.pop_condition()
+                b.del_and(f, tmp, g)
+                for q in src_u[a]:
+                    b.cx(q, tmp)
+            if tower:
+                TI.undo()
+            else:
+                b.del_gf2_inverse_with_scaffold(dd, target=w, scaffold=scaf, field=field)
+                b.free(scaf)
+            _emit_linear(b, src_d, dd)
+            b.del_and(lad[DEG - 3], s[DEG - 1], f)
+            for i in reversed(range(2, DEG - 1)):
+                b.del_and(lad[i - 2], s[i], lad[i - 1])
+            b.del_and(s[0], s[1], lad[0])
+            b.x(s)
+            _emit_linear(b, src_s, s)
+    for q in (s, dd, w, lad):
+        b.free(q)
+    b.free(tmp); b.free(f); b.free(g)
+
+
+# P3 (prototipo espiral, Fase 2, 2026-11-19): Omega emite sus 630 mul/pase
+# como 90 BLOQUES DE 7 (630 = 90 x 7). Cada bloque = 7 muls consecutivos de
+# la secuencia de emision de hoy; cada mul es a su vez una matriz 6x7 (P1:
+# 6 ANDs Karatsuba x 7 puntos de evaluacion). La secuencia de puertas es
+# IDENTICA a la de hoy (organizacional, 0 T, 0 Q): el orden esta forzado por
+# dependencias (el escalado de i antes de sus acumulados; i descendente en
+# ida, ascendente en vuelta); solo el orden j dentro de los acumulados de un
+# mismo i es libre (XOR conmuta: todos suman en S[i] leyendo S[i-j] distintos).
+N_OMEGA_BLOCK = 7
+
+
+def _omega_mul_tasks(LO, adjoint):
+    """Lista ordenada de tareas mul de un pase Omega: ('esc', i, None) o
+    ('acc', i, j). Misma secuencia que el loop de hoy: ida i=LO-1..0 (esc,
+    luego acc j=1..i); vuelta i=0..LO-1 (acc j=i..1, luego esc).
+    Total = LO + LO*(LO-1)/2 = LO*(LO+1)/2 = 630 para LO=35."""
+    tasks = []
+    orden = range(LO) if adjoint else range(LO - 1, -1, -1)
+    for i in orden:
+        if not adjoint:
+            tasks.append(('esc', i, None))
+            for j in range(1, i + 1):
+                tasks.append(('acc', i, j))
+        else:
+            for j in range(i, 0, -1):
+                tasks.append(('acc', i, j))
+            tasks.append(('esc', i, None))
+    return tasks
+
+
+def _omega_mul_blocks(LO, adjoint):
+    """Los muls de un pase Omega en bloques de 7 (P3): 630 = 90 bloques.
+    Bloques = trozos consecutivos de la secuencia de emision (no reordenan)."""
+    tasks = _omega_mul_tasks(LO, adjoint)
+    assert len(tasks) == LO * (LO + 1) // 2, len(tasks)
+    assert len(tasks) % N_OMEGA_BLOCK == 0, len(tasks)
+    return [tasks[k:k + N_OMEGA_BLOCK]
+            for k in range(0, len(tasks), N_OMEGA_BLOCK)]
+
+
+def build_omega_tmp(b, field, sig, S, LO, adjoint):
+    """omega in place como dqi_omega_stage.build_omega, pero delta = sigma_0^-1 se calcula (torre, 75 Toffoli) solo durante cada escalado.
+    P3: los 630 mul/pase se emiten como 90 bloques de 7 (misma secuencia de puertas que hoy)."""
+    with b.mark('omega_rev' if adjoint else 'omega_fwd'):
+        for block in _omega_mul_blocks(LO, adjoint):
+            for kind, i, j in block:
+                if kind == 'esc':
+                    if not adjoint:
+                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+                        P = b.alloc_qubits(DEG)
+                        ixor_kmul(b, sig[0], S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                        b.del_gf2_mul(delta, P, target=S[i], field=field)
+                        b.swap(S[i], P); b.free(P)
+                        vi.undo(); b.free(delta)
+                    else:
+                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+                        P = b.alloc_qubits(DEG)
+                        ixor_kmul(b, delta, S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                        b.del_gf2_mul(sig[0], P, target=S[i], field=field)
+                        b.swap(S[i], P); b.free(P)
+                        vi.undo(); b.free(delta)
+                else:
+                    ixor_kmul(b, sig[j], S[i - j], S[i])  # OMEGA-KARATSUBA (antes ixor_gf2_mul, 63 T)
+
+
+def build_decoder(n=70, LS=36, LO=35, m=4095, positions=None, ida_y_vuelta=True):
+    b = km.CircuitBuilder(); gf = km.GF2Field(DEG)
+    S = [b.create_quantum_register(DEG, name=f'S{i}') for i in range(n)]
+    E = [b.create_classical_register(DEG, name=f'E{j}') for j in range(m)]
+    bm = BMStageV1(b, gf, S, LS, n)
+    bm.forward()
+    build_omega_tmp(b, gf, bm.sigma, S, LO, adjoint=False)
+    build_scan_inv(b, gf, bm.sigma, S[:LO], E, positions)
+    build_omega_tmp(b, gf, bm.sigma, S, LO, adjoint=True)
+    if ida_y_vuelta:
+        bm.reverse()
+        b.x(bm.sigma[0][0]); b.x(bm.tau[1][0]); b.x(bm.d[0])
+    return b.finish_circuit(), bm
+
+
+if __name__ == "__main__":
+    try:  # logs estructurados (qcc_log): una linea por script
+        import sys as _qs
+        from pathlib import Path as _qp
+        _qs.path.insert(0, str(_qp(__file__).resolve().parent.parent / "tools"))
+        from qcc_log import auto as _qcc_auto
+        _qcc_auto(__file__)
+    except Exception:  # noqa: BLE001
+        pass
+    import hashlib
+    import time
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if len(sys.argv) > 1:
+        t0 = time.time()
+        c, _ = build_decoder()
+        out = Path(sys.argv[1])
+        c.to_file(str(out), format="kmb")
+        toff = int(c.operation_statistics().num_toffoli_like)
+        q = int(c.num_qubits)
+        log.info("escrito %s: toffoli=%d qubits=%d", out, toff, q)
+        if _HAS_QCC_LOG:
+            _qcc_emit("dqi_decoder_v1", "build", "ok",
+                      inputs={"n": 70, "LS": 36, "LO": 35, "m": 4095,
+                              "positions": "all", "ida_y_vuelta": True},
+                      outputs={"toffoli": toff, "qubits": q},
+                      duration_s=time.time() - t0)
+            _qcc_emit("dqi_decoder_v1", "write", "ok",
+                      inputs={"out": str(out)},
+                      outputs={"sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+                               "bytes": out.stat().st_size})
+    else:
+        t0 = time.time()
+        c, _ = build_decoder(positions=range(16))
+        toff = int(c.operation_statistics().num_toffoli_like)
+        q = int(c.num_qubits)
+        log.info("16 posiciones: toffoli=%d qubits=%d", toff, q)
+        if _HAS_QCC_LOG:
+            _qcc_emit("dqi_decoder_v1", "build", "ok",
+                      inputs={"n": 70, "LS": 36, "LO": 35, "m": 4095,
+                              "positions": "0..15", "ida_y_vuelta": True},
+                      outputs={"toffoli": toff, "qubits": q},
+                      duration_s=time.time() - t0)
