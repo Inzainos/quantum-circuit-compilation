@@ -17,10 +17,12 @@ Fecha: 2026-11-19. Rama: `local/v5-auditoria-2026-11-19`, base `main` 64d4cec. O
 - **Geomean medido:** QF+R1R5 = 3.53396; Kaggle v4.1 = 3.54317.
 
 ## Lo que NO va en la rama (y por qué)
-Los .kmb de DQI son binarios grandes (>100 MiB, límite de GitHub para archivos sueltos; repo AGENTS.md: van a Releases o LFS). NO se commitean aquí; se referencian por hash:
+Ningún `.kmb` / `.kmx` va en la rama: el `.gitignore` del repo excluye `*.kmb` y `*.kmx` (líneas 15–16), y el AGENTS.md manda los circuitos a Releases o LFS. NO se commitean aquí; se referencian por hash:
 - `dqi_qf.kmb` — 628,685,675 B, sha256 `38b9cbf0e2f552b22bd1b36ccc2a1d781e455a0ae058e78db0b5a95f77a6ae13`
 - `dqi_p1.kmb` / `dqi_p2.kmb` / `dqi_p3.kmb` — 646,811,990 B c/u, sha256 `746271d961a74cf2…` (byte-idénticos a swap42)
-- Los .kmb de invsqrt SÍ van (437 KB c/u, bajo el límite).
+- `invsqrt_R1R5.kmb` — 437,536 B, sha256 `a30a12983f003d7eed60a3122aa870ad1299eabb7f7ad95b510271600a3584b1` (byte-idéntico a R1)
+- Controles invsqrt: `R1_control.kmb` 437,536 B sha `a30a1298…` (igual a R1+R5); `baseline_control.kmb` 437,575 B sha `7e842bbfba8fb40d32c05b3b195073cf368981a92de77197ed22bd3a3f3faf79`; `B_control.kmb` 437,554 B sha `25024fb4401ab8b186e57e9b832a550570798fab06e4c649cc8f0a3f72dfb6a7`; `R5_control.kmb` 437,575 B sha `7e842bbf…` (igual a baseline).
+- Si Claude necesita los .kmb, van por un Release de GitHub (ruta del repo para circuitos), no por la rama.
 
 ## Cómo verificar
 - `sha256sum` / `md5sum` contra los hashes de arriba.
