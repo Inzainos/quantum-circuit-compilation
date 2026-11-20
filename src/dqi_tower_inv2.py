@@ -119,30 +119,15 @@ def _unform(b, form, reg, n, tmp):
 
 
 def mulN_init(b, plan, n, x, y, target):
-    tx, ty, t = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
-    for fx, fy, tm in plan:
-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
-        b.init_and(qx, qy, t)
-        for j in range(n):
-            if (tm >> j) & 1: b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux: _unform(b, fx, x, n, tx)
-        if uy: _unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty); b.free(t)
+    import qf
+    qf.mul_terms_init(b, plan, n, n, x, y, target, n)
 
 
 def mulN_del(b, plan, n, x, y, target):
+    import qf
     m = b.alloc_bits(n)
     b.hmr(target, m)
-    tx, ty = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
-    for fx, fy, tm in plan:
-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
-        for j in range(n):
-            if (tm >> j) & 1:
-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
-        if ux: _unform(b, fx, x, n, tx)
-        if uy: _unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty)
+    qf.mul_terms_phase(b, plan, n, n, x, y, m, n)
 
 
 def inv8_init(b, x, target):
@@ -154,10 +139,8 @@ def inv8_init(b, x, target):
         mk = (1 << i) | (1 << j)
         outs = [o for o in range(3) if ANF[o][mk]]
         if outs:
-            t = b.alloc_qubits(1)[0]
-            b.init_and(x[i], x[j], t)
-            for o in outs: b.cx(t, target[o])
-            b.del_and(x[i], x[j], t); b.free(t)
+            import qf
+            qf.fan_ccx(b, x[i], x[j], target, sum(1 << o for o in outs), 3)   # QF: 1 Toffoli con fan-out, sin ancilla
 
 
 def inv8_del(b, x, target):

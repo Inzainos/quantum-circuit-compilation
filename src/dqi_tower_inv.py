@@ -129,31 +129,16 @@ def _unform(b, form, reg, tmp):
 
 
 def mul6_init(b, x, y, target):
-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
-    for fx, fy, tm in PLAN6:
-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
-        b.init_and(qx, qy, t)
-        for j in range(6):
-            if (tm >> j) & 1: b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux: _unform(b, fx, x, tx)
-        if uy: _unform(b, fy, y, ty)
-    b.free(tx); b.free(ty); b.free(t)
+    import qf
+    qf.mul_terms_init(b, PLAN6, 6, 6, x, y, target, 6)
 
 
 def mul6_del(b, x, y, target):
-    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli)."""
+    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli). Sin ancillas (formas en el sitio)."""
+    import qf
     m = b.alloc_bits(6)
     b.hmr(target, m)
-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]
-    for fx, fy, tm in PLAN6:
-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
-        for j in range(6):
-            if (tm >> j) & 1:
-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
-        if ux: _unform(b, fx, x, tx)
-        if uy: _unform(b, fy, y, ty)
-    b.free(tx); b.free(ty)
+    qf.mul_terms_phase(b, PLAN6, 6, 6, x, y, m, 6)
 
 
 class TowerInv:

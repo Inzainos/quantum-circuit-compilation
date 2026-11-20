@@ -62,29 +62,19 @@ def _xor_in(b, src, dst):
 
 
 def _mulN_to(b, plan, n, x, y, target_masks, target):
-    """target ^= producto segun plan, con mascaras de salida ya mapeadas (lista de (fx, fy, mask_bits_de_target))."""
-    tx, ty, t = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
-    for fx, fy, tm in target_masks:
-        qx, ux = T2._form(b, fx, x, n, tx); qy, uy = T2._form(b, fy, y, n, ty)
-        b.init_and(qx, qy, t)
-        for j in range(len(target)):
-            if (tm >> j) & 1: b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux: T2._unform(b, fx, x, n, tx)
-        if uy: T2._unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty); b.free(t)
+    """target ^= producto segun plan, con mascaras de salida ya mapeadas (lista de (fx, fy, mask_bits_de_target)). Sin ancillas."""
+    import qf
+    qf.mul_terms_init(b, target_masks, n, n, x, y, target, len(target))
 
 
 def _phase_terms(b, n, x, y, terms_with_bits, m):
-    """Para cada termino (fx, fy, bits) aplica CZ(fx(x), fy(y)) condicionado a cada bit medido m[j], j en bits."""
-    tx, ty = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
+    """Para cada termino (fx, fy, bits) aplica CZ(fx(x), fy(y)) condicionado a cada bit medido m[j], j en bits. Sin ancillas."""
+    import qf
     for fx, fy, bits in terms_with_bits:
-        qx, ux = T2._form(b, fx, x, n, tx); qy, uy = T2._form(b, fy, y, n, ty)
+        qx, ix = qf.form_ip(b, fx, x, n); qy, iy = qf.form_ip(b, fy, y, n)
         for j in bits:
             b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
-        if ux: T2._unform(b, fx, x, n, tx)
-        if uy: T2._unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty)
+        qf.unform_ip(b, iy); qf.unform_ip(b, ix)
 
 
 def _bits(mask):

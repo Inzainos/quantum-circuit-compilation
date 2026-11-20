@@ -148,6 +148,19 @@ class BMStageV1:
             else:
                 b.isub(1, target=self.d, control=p); b.isub(1, target=self.d); b.cx(p, self.d)
 
+    def _ladder6_alloc(self):
+        """P2 (prototipo espiral, Fase 2, 2026-11-19): bloque de escalera 6x1
+        canonico del DQI (paridad par). Los 6 temps de la escalera de
+        _t_recon (DW - 2 = 6 qubits) se allocan aqui, una vez por ronda, y
+        se liberan en _ladder6_free al final de _t_recon_del. NO es la
+        escalera de _flags (DEG - 2 = 10 temps, test D!=0); esa no se toca.
+        """
+        return self.b.alloc_qubits(DW - 2)  # 6 temps de escalera
+
+    def _ladder6_free(self, lad):
+        """P2: libera exactamente los 6 qubits del bloque de escalera 6x1."""
+        self.b.free(lad)
+
     def _t_recon(self, p):
         """w = (no p) AND (d_post <= 0). Reconstruccion de t (Frente A).
 
@@ -162,7 +175,7 @@ class BMStageV1:
         b = self.b
         d = self.d  # 8 bits, d_post
         b.x(d)  # flip d para el test de cero
-        lad = b.alloc_qubits(DW - 2)  # 6 temps de escalera
+        lad = self._ladder6_alloc()  # P2: bloque 6x1 canonico
         z0 = b.alloc_qubits(1)[0]
         b.init_and(d[0], d[1], lad[0])
         for i in range(2, DW - 1):
@@ -208,7 +221,7 @@ class BMStageV1:
             b.del_and(lad[i - 2], self.d[i], lad[i - 1])
         b.del_and(self.d[0], self.d[1], lad[0])
         b.x(self.d)
-        b.free(lad)
+        self._ladder6_free(lad)  # P2: bloque 6x1 canonico
         b.free(z0)
 
     def _dclear(self, D, p):

@@ -40,10 +40,10 @@ def _free_Np(b, N, Np):
 
 
 class Inner6E1d(Inner6):
-    """Inner6 que libera N' tras computar r, antes de los productos en y."""
+    """Inner6 que libera N' tras computar r y reserva el resultado (6) DESPUES, antes de los productos en y."""
 
     def forward(self):
-        b, x, y = self.b, self.x, self.y
+        b, x = self.b, self.x
         a0, a1 = x[0:3], x[3:6]
         N = b.alloc_qubits(3)
         T2.mulN_init(b, T2.PLAN3, 3, a0, a1, N)
@@ -51,14 +51,16 @@ class Inner6E1d(Inner6):
         T2._lin(b, T2.NUSQ8, a1, N)
         r = b.alloc_qubits(3)
         T2.inv8_init(b, N, r)
-        self.R = {'N': N, 'r': r}
         # --- E1d: liberar N' aqui (no se usa en los productos) ---
         _free_Np(b, x, N)
         self.R = {'r': r}
+        y = b.alloc_qubits(6)                          # QF: y (rc) nace aqui -> vivo maximo 15 en vez de 18
+        self.y = y
         _xor_in(b, a1, a0)
         T2.mulN_init(b, T2.PLAN3, 3, r, a0, y[0:3])
         T2.mulN_init(b, T2.PLAN3, 3, r, a1, y[3:6])
         _xor_in(b, a1, a0)
+        return y
 
 
 class TowerInv3E1d:
@@ -76,9 +78,8 @@ class TowerInv3E1d:
         T2._lin(b, T1.SQ, a0, N)
         T2._lin(b, T1.NUSQ, a1, N)
         apply_inplace(b, OPS_P2C, N)
-        rc = b.alloc_qubits(6)
-        self.inner = Inner6E1d(b, N, rc)
-        self.inner.forward()
+        self.inner = Inner6E1d(b, N, None)
+        rc = self.inner.forward()
         apply_inplace(b, OPS_C2P, rc)
         _xor_in(b, a1, a0)
         _mulN_to(b, None, 6, rc, a0, W0, w)
@@ -97,17 +98,26 @@ class TowerInv3E1d:
         _phase_terms(b, 6, rc, a1, [(fx, fy, _bits(mk)) for fx, fy, mk in W1], m)
         _xor_in(b, a1, a0)
         apply_inplace(b, OPS_C2P, rc, inverse=True)
-        # recomputar SOLO N' (6 T; r sigue vivo) y correr inner.undo() estandar
+        # QF: primero se deshace y (rc) con r y N, se libera rc, y SOLO entonces se recomputa N' (6 T): vivo maximo 15
+        r = self.inner.R['r']
+        ia0, ia1 = N[0:3], N[3:6]
+        _xor_in(b, ia1, ia0)
+        T2.mulN_del(b, T2.PLAN3, 3, r, ia1, rc[3:6])
+        T2.mulN_del(b, T2.PLAN3, 3, r, ia0, rc[0:3])
+        _xor_in(b, ia1, ia0)
+        b.free(rc)
         Np = _recompute_Np(b, N)
-        inner2 = Inner6(b, N, rc)
-        inner2.R = {'N': Np, 'r': self.inner.R['r']}
-        inner2.undo()
+        T2.inv8_del(b, Np, r)
+        T2._lin(b, T2.NUSQ8, ia1, Np)
+        T2._lin(b, T2.SQ8, ia0, Np)
+        T2.mulN_del(b, T2.PLAN3, 3, ia0, ia1, Np)
+        b.free(Np)
+        b.free(r)
         apply_inplace(b, OPS_P2C, N, inverse=True)
         T2._lin(b, T1.NUSQ, a1, N)
         T2._lin(b, T1.SQ, a0, N)
         T1.mul6_del(b, a0, a1, N)
         b.free(N)
-        b.free(rc)
         self.R = {}
 
 
