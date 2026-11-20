@@ -102,8 +102,11 @@ def _plan6():
     return plan
 
 
-PLAN6 = _plan6()
-assert len(PLAN6) == 18, len(PLAN6)
+PLAN6_KAR = _plan6()
+assert len(PLAN6_KAR) == 18, len(PLAN6_KAR)
+# P15: GF(64)=GF(4)[g]/(cubica); producto de cuadraticas sobre GF(4) evaluado en P1(GF(4)) (5 puntos x 3 ANDs). Verificado 64x64.
+PLAN6 = [(17, 17, 29), (8, 8, 9), (25, 25, 20), (15, 15, 22), (56, 56, 14), (55, 55, 24), (13, 13, 50), (14, 14, 63), (3, 3, 13), (19, 19, 1), (62, 62, 57), (45, 45, 56), (44, 44, 58), (40, 40, 18), (4, 4, 40)]
+assert len(PLAN6) == 15, len(PLAN6)
 
 
 # ---------- primitivas de circuito ----------
@@ -129,31 +132,16 @@ def _unform(b, form, reg, tmp):
 
 
 def mul6_init(b, x, y, target):
-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
-    for fx, fy, tm in PLAN6:
-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
-        b.init_and(qx, qy, t)
-        for j in range(6):
-            if (tm >> j) & 1: b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux: _unform(b, fx, x, tx)
-        if uy: _unform(b, fy, y, ty)
-    b.free(tx); b.free(ty); b.free(t)
+    import qf
+    qf.mul_terms_init(b, PLAN6, 6, 6, x, y, target, 6)
 
 
 def mul6_del(b, x, y, target):
-    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli)."""
+    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli). Sin ancillas (formas en el sitio)."""
+    import qf
     m = b.alloc_bits(6)
     b.hmr(target, m)
-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]
-    for fx, fy, tm in PLAN6:
-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
-        for j in range(6):
-            if (tm >> j) & 1:
-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
-        if ux: _unform(b, fx, x, tx)
-        if uy: _unform(b, fy, y, ty)
-    b.free(tx); b.free(ty)
+    qf.mul_terms_phase(b, PLAN6, 6, 6, x, y, m, 6)
 
 
 class TowerInv:

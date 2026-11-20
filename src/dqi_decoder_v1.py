@@ -49,35 +49,37 @@ def _to_coords(srcs):
 
 
 def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
+    """Barrido por posicion con s y dd formados EN EL SITIO sobre sig[0] y sig[1] (QF: -24 qubits, 0 Toffoli).
+
+    s  = sum_i pw[i] sig_i      (pw[0] = 1)      -> sig[0] += sum_{i>=1} pw[i] sig_i              (CX; invertible)
+    dd = sum_{i impar} pw[i-1] sig_i (pw[0] = 1) -> sig[1] += sum_{i impar>=3} pw[i-1] sig_i      (CX; invertible)
+    ValueInv3 cambia dd a coordenadas de torre en el sitio y lo devuelve a valor (solo CX). Orden: s primero (usa sig[1]
+    original), luego dd; se deshace en orden inverso."""
     n_pos = len(E)
     positions = range(min(n_pos, G.Q - 1)) if positions is None else positions
-    apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
-    # Reutilizar registros entre posiciones para reducir overhead de alloc/free
-    s = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
+    apow = [_alpha_pow_bits(s_) for s_ in range(2 * DEG - 1)]
+    assert tower, "QF: solo ruta de torre"
+    w = b.alloc_qubits(DEG)
     tmp = b.alloc_qubits(1)[0]; f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(1)[0]   # un solo qubit para el AND de fase (se usa de a uno)
+    s = sig[0]
     for p in positions:
         r = _alpha_pow_bits(-p)
         with b.mark('scan_pos'):
             pw = [1]
             for i in range(1, max(len(sig), len(om))):
                 pw.append(G.mul(pw[-1], r))
-            src_s = _linear_sources(pw[:len(sig)], sig)
+            src_s = _linear_sources(pw[1:len(sig)], sig[1:])
             src_u = _linear_sources(pw[:len(om)], om)
-            dco = [pw[i - 1] if i % 2 == 1 else 0 for i in range(len(sig))]
-            src_d = _linear_sources(dco, sig)
-            if tower:
-                src_d = _to_coords(src_d)
-            _emit_linear(b, src_s, s)
+            dco = [pw[i - 1] if (i % 2 == 1 and i >= 3) else 0 for i in range(2, len(sig))]
+            src_d = _linear_sources(dco, sig[2:])
+            _emit_linear(b, src_s, s)                 # sig[0] = s
             b.x(s)
             b.init_and(s[0], s[1], lad[0])
             for i in range(2, DEG - 1):
                 b.init_and(lad[i - 2], s[i], lad[i - 1])
             b.init_and(lad[DEG - 3], s[DEG - 1], f)
-            _emit_linear(b, src_d, dd)
-            if tower:
-                TI = TowerInv(b, dd, w); TI.forward()
-            else:
-                _, scaf = b.init_gf2_inverse_with_scaffold(dd, target=w, field=field)
+            _emit_linear(b, src_d, sig[1])            # sig[1] = dd (valor)
+            VI = ValueInv(b, sig[1], w).forward()
             # fase: (-1)^{ sum_a (f & u_a) * t_a },  t_a = sum_k E[p][k] * sum_{b in srcs(a,k)} w_b
             # sin registros t ni u: u_a se forma en un solo qubit 'tmp' y la fase se aplica con CZ(g_a, w_b) condicionados a E[p][k]
             for a in range(DEG):
@@ -93,46 +95,82 @@ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
                 b.del_and(f, tmp, g)
                 for q in src_u[a]:
                     b.cx(q, tmp)
-            if tower:
-                TI.undo()
-            else:
-                b.del_gf2_inverse_with_scaffold(dd, target=w, scaffold=scaf, field=field)
-                b.free(scaf)
-            _emit_linear(b, src_d, dd)
+            VI.undo()
+            _emit_linear(b, src_d, sig[1])            # sig[1] restaurado
             b.del_and(lad[DEG - 3], s[DEG - 1], f)
             for i in reversed(range(2, DEG - 1)):
                 b.del_and(lad[i - 2], s[i], lad[i - 1])
             b.del_and(s[0], s[1], lad[0])
             b.x(s)
-            _emit_linear(b, src_s, s)
-    for q in (s, dd, w, lad):
+            _emit_linear(b, src_s, s)                 # sig[0] restaurado
+    for q in (w, lad):
         b.free(q)
     b.free(tmp); b.free(f); b.free(g)
 
 
+# P3 (prototipo espiral, Fase 2, 2026-11-19): Omega emite sus 630 mul/pase
+# como 90 BLOQUES DE 7 (630 = 90 x 7). Cada bloque = 7 muls consecutivos de
+# la secuencia de emision de hoy; cada mul es a su vez una matriz 6x7 (P1:
+# 6 ANDs Karatsuba x 7 puntos de evaluacion). La secuencia de puertas es
+# IDENTICA a la de hoy (organizacional, 0 T, 0 Q): el orden esta forzado por
+# dependencias (el escalado de i antes de sus acumulados; i descendente en
+# ida, ascendente en vuelta); solo el orden j dentro de los acumulados de un
+# mismo i es libre (XOR conmuta: todos suman en S[i] leyendo S[i-j] distintos).
+N_OMEGA_BLOCK = 7
+
+
+def _omega_mul_tasks(LO, adjoint):
+    """Lista ordenada de tareas mul de un pase Omega: ('esc', i, None) o
+    ('acc', i, j). Misma secuencia que el loop de hoy: ida i=LO-1..0 (esc,
+    luego acc j=1..i); vuelta i=0..LO-1 (acc j=i..1, luego esc).
+    Total = LO + LO*(LO-1)/2 = LO*(LO+1)/2 = 630 para LO=35."""
+    tasks = []
+    orden = range(LO) if adjoint else range(LO - 1, -1, -1)
+    for i in orden:
+        if not adjoint:
+            tasks.append(('esc', i, None))
+            for j in range(1, i + 1):
+                tasks.append(('acc', i, j))
+        else:
+            for j in range(i, 0, -1):
+                tasks.append(('acc', i, j))
+            tasks.append(('esc', i, None))
+    return tasks
+
+
+def _omega_mul_blocks(LO, adjoint):
+    """Los muls de un pase Omega en bloques de 7 (P3): 630 = 90 bloques.
+    Bloques = trozos consecutivos de la secuencia de emision (no reordenan)."""
+    tasks = _omega_mul_tasks(LO, adjoint)
+    assert len(tasks) == LO * (LO + 1) // 2, len(tasks)
+    assert len(tasks) % N_OMEGA_BLOCK == 0, len(tasks)
+    return [tasks[k:k + N_OMEGA_BLOCK]
+            for k in range(0, len(tasks), N_OMEGA_BLOCK)]
+
+
 def build_omega_tmp(b, field, sig, S, LO, adjoint):
-    """omega in place como dqi_omega_stage.build_omega, pero delta = sigma_0^-1 se calcula (torre, 75 Toffoli) solo durante cada escalado."""
+    """omega in place como dqi_omega_stage.build_omega, pero delta = sigma_0^-1 se calcula (torre, 75 Toffoli) solo durante cada escalado.
+    P3: los 630 mul/pase se emiten como 90 bloques de 7 (misma secuencia de puertas que hoy)."""
     with b.mark('omega_rev' if adjoint else 'omega_fwd'):
-        orden = range(LO) if adjoint else range(LO - 1, -1, -1)
-        for i in orden:
-            if not adjoint:
-                delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
-                P = b.alloc_qubits(DEG)
-                ixor_kmul(b, sig[0], S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
-                b.del_gf2_mul(delta, P, target=S[i], field=field)
-                b.swap(S[i], P); b.free(P)
-                vi.undo(); b.free(delta)
-                for j in range(1, i + 1):
+        for block in _omega_mul_blocks(LO, adjoint):
+            for kind, i, j in block:
+                if kind == 'esc':
+                    if not adjoint:
+                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+                        P = b.alloc_qubits(DEG)
+                        ixor_kmul(b, sig[0], S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                        b.del_gf2_mul(delta, P, target=S[i], field=field)
+                        b.swap(S[i], P); b.free(P)
+                        vi.undo(); b.free(delta)
+                    else:
+                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+                        P = b.alloc_qubits(DEG)
+                        ixor_kmul(b, delta, S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                        b.del_gf2_mul(sig[0], P, target=S[i], field=field)
+                        b.swap(S[i], P); b.free(P)
+                        vi.undo(); b.free(delta)
+                else:
                     ixor_kmul(b, sig[j], S[i - j], S[i])  # OMEGA-KARATSUBA (antes ixor_gf2_mul, 63 T)
-            else:
-                for j in range(i, 0, -1):
-                    ixor_kmul(b, sig[j], S[i - j], S[i])  # OMEGA-KARATSUBA (antes ixor_gf2_mul, 63 T)
-                delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
-                P = b.alloc_qubits(DEG)
-                ixor_kmul(b, delta, S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
-                b.del_gf2_mul(sig[0], P, target=S[i], field=field)
-                b.swap(S[i], P); b.free(P)
-                vi.undo(); b.free(delta)
 
 
 def build_decoder(n=70, LS=36, LO=35, m=4095, positions=None, ida_y_vuelta=True):

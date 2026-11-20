@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Inversion GF(2^12) por torre de dos niveles GF(2^12)/GF(2^6)/GF(2^3): 75 Toffoli (vs 108 de un nivel).
+"""Inversion GF(2^12) por torre de dos niveles GF(2^12)/GF(2^6)/GF(2^3): 66 Toffoli (vs 108 de un nivel).
 
- Nivel 12->6: a = a0 + a1 y,  N = a0^2 + a0 a1 + nu a1^2 (GF(2^6)),  a^-1 = N^-1 ((a0+a1) + a1 y)     [18 + inv6 + 36 AND]
+ Nivel 12->6: a = a0 + a1 y,  N = a0^2 + a0 a1 + nu a1^2 (GF(2^6)),  a^-1 = N^-1 ((a0+a1) + a1 y)     [15 + inv6 + 30 AND]
  Nivel 6->3 : igual sobre GF(2^3) con nu' ;  inv3 es una funcion cuadratica de 3 bits (3 AND, sin mult.)   [6 + 3 + 12 = 21 AND]
 Todo uncomputo libre (HMR + correccion de fase condicionada).  Logs: logging 'dqi_tower2'.
 """
@@ -119,30 +119,15 @@ def _unform(b, form, reg, n, tmp):
 
 
 def mulN_init(b, plan, n, x, y, target):
-    tx, ty, t = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
-    for fx, fy, tm in plan:
-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
-        b.init_and(qx, qy, t)
-        for j in range(n):
-            if (tm >> j) & 1: b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux: _unform(b, fx, x, n, tx)
-        if uy: _unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty); b.free(t)
+    import qf
+    qf.mul_terms_init(b, plan, n, n, x, y, target, n)
 
 
 def mulN_del(b, plan, n, x, y, target):
+    import qf
     m = b.alloc_bits(n)
     b.hmr(target, m)
-    tx, ty = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
-    for fx, fy, tm in plan:
-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
-        for j in range(n):
-            if (tm >> j) & 1:
-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
-        if ux: _unform(b, fx, x, n, tx)
-        if uy: _unform(b, fy, y, n, ty)
-    b.free(tx); b.free(ty)
+    qf.mul_terms_phase(b, plan, n, n, x, y, m, n)
 
 
 def inv8_init(b, x, target):
@@ -154,10 +139,8 @@ def inv8_init(b, x, target):
         mk = (1 << i) | (1 << j)
         outs = [o for o in range(3) if ANF[o][mk]]
         if outs:
-            t = b.alloc_qubits(1)[0]
-            b.init_and(x[i], x[j], t)
-            for o in outs: b.cx(t, target[o])
-            b.del_and(x[i], x[j], t); b.free(t)
+            import qf
+            qf.fan_ccx(b, x[i], x[j], target, sum(1 << o for o in outs), 3)   # QF: 1 Toffoli con fan-out, sin ancilla
 
 
 def inv8_del(b, x, target):

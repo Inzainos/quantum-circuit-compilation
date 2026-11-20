@@ -63,6 +63,42 @@ PLAN42 = [
     (4038, 4038, 1659),
 ]
 
+# P1 (prototipo espiral, Fase 2, 2026-11-19): matriz 6x7 EXPLICITA.
+# PLAN42 esta agrupado por punto de evaluacion (generador diseno_toom4.py,
+# build_plan: bucle externo sobre los 7 PTS, interno sobre los 6 ANDs
+# Karatsuba de kar3_plan(); 0 fusiones, 0 nulos -> el orden plano es
+# punto-mayor). Fila = indice AND Karatsuba dentro del producto GF(8)
+# (0..5); columna = punto de evaluacion (0..6).
+# PLAN42[6*col + row] == PLAN42_MATRIX[row][col].
+N_ROWS = 6
+N_COLS = 7
+# OJO: el paso (stride) es N_ROWS (6 ANDs por punto), no N_COLS.
+PLAN42_MATRIX = [[PLAN42[N_ROWS * col + row] for col in range(N_COLS)]
+                 for row in range(N_ROWS)]
+# Verificacion estructural: aplanar por columnas reproduce PLAN42 exacto.
+assert [PLAN42_MATRIX[r][c] for c in range(N_COLS) for r in range(N_ROWS)] == PLAN42
+assert len(PLAN42_MATRIX) == N_ROWS
+assert all(len(fila) == N_COLS for fila in PLAN42_MATRIX)
+
+# Orden de emision de la matriz. "col" = columna-mayor = el orden plano de
+# hoy (cada columna = un producto GF(8) completo) -> secuencia de puertas
+# IDENTICA a swap42, .kmb byte-identico. "row" = fila-mayor (sonda de
+# medicion para la confirmacion #3 de FASE 2: si el orden cambia
+# reaction_depth o Q pico). Solo "col" es el entregable P1.
+EMIT_ORDER = "col"
+
+
+def _iter_plan():
+    """Itera los 42 terminos en el orden de emision de la matriz."""
+    if EMIT_ORDER == "row":
+        for row in range(N_ROWS):
+            for col in range(N_COLS):
+                yield PLAN42_MATRIX[row][col]
+    else:  # "col": mismo orden que PLAN42 plano
+        for col in range(N_COLS):
+            for row in range(N_ROWS):
+                yield PLAN42_MATRIX[row][col]
+
 
 def _form_to(b, form, reg, tmp):
     """Si la forma es un solo bit devuelve ese qubit; si no la calcula en tmp con CNOT."""
@@ -75,24 +111,14 @@ def _form_to(b, form, reg, tmp):
 
 
 def ixor_kmul42(b: km.CircuitBuilder, x: km.array, y: km.array, target: km.array) -> None:
-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
-    for fx, fy, tm in PLAN42:
-        qx, ux = _form_to(b, fx, x, tx)
-        qy, uy = _form_to(b, fy, y, ty)
-        b.init_and(qx, qy, t)
-        for j in range(DEG):
-            if (tm >> j) & 1:
-                b.cx(t, target[j])
-        b.del_and(qx, qy, t)
-        if ux:
-            for i in range(DEG):
-                if (fx >> i) & 1:
-                    b.cx(x[i], tx)
-        if uy:
-            for i in range(DEG):
-                if (fy >> i) & 1:
-                    b.cx(y[i], ty)
-    b.free(tx); b.free(ty); b.free(t)
+    """Toom-4 42 AND sin ancillas (QF): formas lineales en el sitio + Toffoli con fan-out. Mismo T (42).
+    P1+P2+P3 sobre QF: el plan se emite como la matriz 6x7 EXPLICITA (P1) y se
+    pasa a qf.mul_terms_init como list(_iter_plan()); con EMIT_ORDER="col" eso
+    es exactamente PLAN42 en orden, asi que la secuencia de puertas es
+    IDENTICA a la del QF (el bucle sobre el plan vive dentro de
+    qf.mul_terms_init, no aqui)."""
+    import qf
+    qf.mul_terms_init(b, list(_iter_plan()), DEG, DEG, x, y, target, DEG)
 
 
 if __name__ == "__main__":
