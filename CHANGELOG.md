@@ -190,3 +190,41 @@ export PYTHONPATH=/home/deamon/quantum-circuit-compilation/kickmix:/home/deamon/
 - `quantum_analysis.ipynb` lee archivos de `submission_final/` que no existen y calcula el score de invsqrt como Q²·T (la métrica oficial es Q × toffoli_equivalent).
 - `src/qualtran_bloqs/plan_b_gates.py` declara costos (`TComplexity`) que ningún circuito kickmix usa; no entran al score.
 
+## [Unreleased] - 2026-11-20 — QF + 15 AND (ruta (a)): DQI medido Q=1,857, T=670,307; adopción bloqueada
+
+### Added
+- `docs/QF_P15_AND_2026-11-20.md` — Estado completo del QF + 15 AND (parada del parche, ruta (a) medida, D-P15-1, adopción bloqueada, producción vigente).
+
+### Measured (ruta (a); medido, NO adoptado; Gold pendiente)
+- Solo el hunk P15 (`dqi_tower_inv.py` @@ -102): PLAN6 de Karatsuba (18 términos) → lista explícita de 15 términos, conservando `_plan6()` como `PLAN6_KAR`. Aplicado verbatim del parche `p15_main64d4cec_3_zirx.patch` (md5 `f3bbb75d…`).
+- **Q=1,857, T=670,307** (exacto al esperado, Δ 0 en todo). Desglose: barrido 364,455 (4,095 × 89), omega 57,540 (28,770 + 28,770), BM 248,312. Deltas vs QF: scan −36,855, omega −630, BM −2,520; total −40,005.
+- Factor DQI 8.71540 (+5.97 %), geomean 4.98760 (+1.95 %, refs v5). Score PROYECCIÓN con el R del Gold QF ≈ 2,804,116,362,477.3 (cociente 0.943680, −5.63 % vs Gold QF 2,971,470,537,625.3).
+- Circuito `dqi_qf_p15.kmb` (631,379,345 B, sha256 `60270f22c884ccebc0e06ab870f37d1efcca23fdc93c9f3cbf352c1c84cd9018`). Build 140 s, EXIT=0, D-QF-1 OK. Control byte-idéntico al QF (sha `38b9cbf0…`, Q=1,857, T=710,312).
+- `PLAN6 == plan15.txt` (15 términos, mismo orden); verificación 64×64 en verde (0 errores).
+- D-P15-1 (docstrings en `dqi_tower_inv2.py`, comentarios, no código): torre 75 → **66 Toffoli**; `[18 + inv6 + 36 AND]` → `[15 + inv6 + 30 AND]` (15+21+30 = 66; el "36" también es 2×PLAN6).
+- Inversión de torre exhaustiva (4,096 valores de GF(2^12)): inverso correcto 4096/4096, basura 0, fase volteada 0, toffoli 66. Evidencia local (el simulador da falsos positivos con HMR); el Gold lo corre el Brujo.
+- El parche combinado QF + 15 AND no aplica mecánico sobre la réplica QF: de 17 hunks, 13 ya aplicados, qf.py byte-idéntico, 1 limpio (@@ -102), 2 FAILED — `dqi_kmul42.py` @@ -75 (conflicto textual, no funcional: `list(_iter_plan()) == PLAN42`) y `dqi_tower_inv.py` @@ -129 (contenido ya presente).
+
+### Blocked
+- **Adopción en el repo BLOQUEADA (2026-11-20 ~13:18):** el repo no contiene el código QF ni P1/P2/P3 en ninguna rama local ni en main de GitHub (sin `src/qf.py`, sin `_iter_plan`, `N_OMEGA_BLOCK` 0, `_ladder6_alloc` 0); el código vive solo en la Kali (branch `local/claude-qf-minus7-2026-11-19`) y en la réplica `qf-p15/src`. El hunk aplicaría textualmente, pero el build sería el DQI viejo con PLAN6=15, no el QF+15 — byte-idéntico imposible desde esa base. No se tocó nada. Vías: (a) adoptar QF+P1+P2+P3 primero y P15 encima; (b) rama snapshot con `qf-p15/src`; (c) no integrar por ahora. Decisión de Elán/la cadena, pendiente.
+
+### Notes
+- Producción vigente sigue siendo **v5 (Kaggle 4.90803, ref 58594222)**: DQI P1+P2+P3-sobre-QF Q=1,857/T=710,312 (sha `38b9cbf0…`); invsqrt R1+R5 score 389,261.01; dfthcsos seg100@brot13 score 1,257,565,658.5; notebook público v7; GitHub main `a13598a9` (PR #33).
+- Nada a Kaggle, nada a main, nada al notebook sin GO de Elán. Cadena: Programación → Datos supervisa → Brujo verifica (Gold) → Auditor revisa → Elán decide.
+
+## [Unreleased] - 2026-11-20 — v6 en Kaggle (5.00379, nuevo mejor personal) + integración QF+15 en el repo
+
+### Added
+- **v6 subido a Kaggle y puntuado: public score 5.00379** (ref 58633092, status COMPLETE; enviado 2026-11-20T19:46:53Z, puntuado 20:19:18Z, ~32.4 min). ZIP `candidato-v6-2026-11-20.zip` (60,993,989 B, sha256 `dbd43292d075ffcd96e379d85f2e4888f9e847e7c7cf39b2926323f0506dbbf0`): exactamente los 13 archivos del v5, mismos nombres y orden, con SOLO `dqi.kmb` reemplazado por el P15 (sha `60270f22…`, Q=1,857, T=670,307); los 12 no-DQI byte-idénticos al v5. Envío REGULAR — selección final intacta (v6 + v4.1; Elán marcó el v6 tras la subida — al momento de la subida eran v5 + v4.1).
+- **Integración QF+15 en el repo (vía (a) completada):** rama `local/qf-p15-integracion-2026-11-20` (base main `a13598a9`); commit 1 `d74f60c3` (QF+P1+P2+P3, 11 archivos) y commit 2 `41444adb` (P15 + docstrings D-P15-1, 2 archivos). Rebuilds desde la rama byte-idénticos: control QF (sha `38b9cbf0…`, Q=1,857, T=710,312) y final P15 (sha `60270f22…`, Q=1,857, T=670,307). **Mergeado en main (PR #34, merge commit `320312bd`, 2026-11-20 14:23:18 CST; padres `a13598a9` + `41444adb`).**
+
+### Measured
+- v6 re-verificado desde el ZIP extraído: dfthcsos ✅ PASS score 1,257,565,658.5356445 (diff 0.0); invsqrt ✅ PASS score 389261.0125451585 (diff 0.0); DQI ✅ byte-identidad por 3 vías, todas `60270f22…`.
+- Kaggle 5.00379 vs esperado local 4.98760: **+0.3246 %** (mismo factor de escala Kaggle-vs-local del v5); vs v5 4.90803: **+1.9511 %** — nuevo mejor personal. Top 2 por public score: v6 (5.00379) y v5 (4.90803).
+- **Gold P15 — PASS (Brujo, ~13:00, driver lean local, 483.9 s, EXIT=0):** status PASS, ve=5, pe=0, score **2,804,116,362,477.3** (MEDIDO, no proyección), R=1.2131052140444296, eps_plus 0.0010479495500463395, T=670,307, Q=1,857, sha `60270f22…`, 102,400 tiros, mismo seed fijo del Gold QF. Los 5 fallos son EXACTAMENTE los mismos que los del Gold QF (66102/33, 75899/34, 80547/33, 92390/34, 94389/33). Salvedad: `reaction_depth` 3154 es el valor REGISTRADO del Gold QF, no medido para el P15 (no entra en el score). Cadena del Gold COMPLETA: Brujo (37 l., md5 `0253a6d5…`) → Datos (118 l., md5 `8fca3741…`, CONCURRO PASA) → Auditor (47 l., md5 `95ce3fc4…`, CONCURRO PASA). Corrección al registro: el "Gold pendiente" / "PROYECCIÓN" de la entrada anterior y del reporte de ruta (a) quedó stale — el Gold corrió ~13:00, antes de que se escribiera el reporte.
+- Cadena del ZIP v6 completa: Programación ✓ → Brujo ✓ → Auditor ✓ (revisión del ZIP ~13:50, md5 `d4152657…`) → Datos ✓ (supervisión del ZIP, 74 l., md5 `6b7ddf0d…`, CONCURRO PASA con D-V6-1). La subida: Brujo verificó en vivo (30 l., md5 `69fef82c…`) → Auditor revisó (~14:30, CONCURRO PASA, A-SV6-1); la supervisión de Datos de la subida corría en paralelo. **A-SV6-1 (Auditor):** la etiqueta de cadena del encabezado del reporte de subida es la cadena del ZIP, no la de la subida — precisión de etiqueta, no de sustancia.
+- Cadena de la integración completa: Programación ✓ → Brujo ✓ (29 l., md5 `3e1dbfc8…` — vigente con D-INT-1; Datos supervisó la versión `10d43e35…`) → Datos ✓ (87 l., md5 `9988882a…`, CONCURRO PASA con D-INT-1) → Auditor ✓ (44 l., md5 `696e4280…`, CONCURRO PASA). **D-INT-1 (Datos):** conteos +/- por archivo del diff commit1→commit2: `dqi_tower_inv.py` 5+/2−, `dqi_tower_inv2.py` 2+/2− (totales 7+/4− correctos).
+
+### Notes
+- El bloqueo de adopción de la entrada anterior queda resuelto por la rama de integración; **mergeado en main (PR #34, 2026-11-20 14:23:18 CST)** — la cadena de la integración estaba completa antes del merge (Brujo ✓ → Datos ✓ → Auditor ✓); el circuito de la rama ya está Gold-verificado — rebuild byte-idéntico al .kmb del Gold — y no hace falta un Gold nuevo.
+- Nada al notebook sin GO de Elán.
