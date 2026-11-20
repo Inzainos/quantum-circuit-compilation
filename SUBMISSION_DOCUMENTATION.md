@@ -1,5 +1,7 @@
 # Documentación Submission Quantum Circuit Compilation
 
+> **Corrección (2026-11-20):** las cifras del cuerpo de este documento (invsqrt 419,336; DQI Q=138 / T=4,408 / "245,000×"; dfthcsos Q=104 / T=279) **NO están verificadas** — ningún circuito del repo las reproduce y los archivos subidos con esas cifras fallaron los verificadores oficiales (ver CHANGELOG, 2026-11-03). Se conservan abajo solo como registro histórico de lo afirmado. **Estado verificado actual:** producción v6 en Kaggle **5.00379** (ref 58633092, status COMPLETE; v5 4.90803 queda segundo) — invsqrt R1+R5 score 389,261.01 (Q=139, T=2,561, Gold PASS); DQI P1+P2+P3-sobre-QF + P15 Q=1,857, T=670,307, score 2,804,116,362,477.3 (MEDIDO; Gold PASS, ve=5, pe=0, 102,400 tiros); dfthcsos seg100@brot13 score 1,257,565,658.5, error_2 18.9592 mHa (PASS oficial). **QF + 15 AND:** factor DQI 8.71540152 (D-V6-1); geomean 4.98760; integrado en la rama `local/qf-p15-integracion-2026-11-20` (commits `d74f60c3` + `41444adb`; rebuilds byte-idénticos al QF `38b9cbf0…` y al P15 `60270f22…`) y mergeado en main (PR #34, 2026-11-20 14:23:18 CST) — detalle en `docs/QF_P15_AND_2026-11-20.md`.
+
 ## Resumen Ejecutivo
 
 Tres benchmarks optimizados con mejoras significativas:

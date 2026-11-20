@@ -108,6 +108,8 @@ quantum-circuit-compilation/
 ### Publicación en GitHub
 
 **Vigente (2026-11-07):** `submission/final_submission.zip` (~58 MB) es el artefacto de envío; su contenido y verificación están en `docs/ESTADO_FINAL_2026-11-07.md`. (Lo que sigue de esta sección y la tabla «Estado actual (2026-11-03)» son históricos.)
+
+**Vigente (2026-11-20):** main `320312bd` (PR #34 mergeado — integración QF+15, 2026-11-20 14:23:18 CST; PR #33 antes); producción en Kaggle **v6, 5.00379** (ref 58633092, nuevo mejor personal; v5 4.90803 queda segundo). El QF + 15 AND está integrado en la rama `local/qf-p15-integracion-2026-11-20` (commits `d74f60c3` + `41444adb`; rebuilds byte-idénticos al QF y al P15) y mergeado en main (PR #34); Gold PASS (Brujo, 102,400 tiros, ve=5, pe=0) — ver `docs/QF_P15_AND_2026-11-20.md` y el CHANGELOG (2026-11-20).
 Los circuitos y datasets sueltos (`.kmb`, `.kmx`, `.npz`, `.fcidump`), el entorno
 virtual y la copia local del paper no se versionan (`.gitignore`): algunos superan
 el límite de 100 MiB por archivo de GitHub. Cada nuevo commit del ZIP infla el
@@ -119,7 +121,18 @@ zip válido. El último zip válido está en el commit `fb4e95b` (`git show fb4e
 Antes de enviar a Kaggle, corre los tres verificadores sobre los archivos exactos del zip.
 
 
-## Estado actual (2026-11-03) — solo cifras verificadas con los verificadores oficiales
+## Estado actual (2026-11-20) — producción v6 + QF + 15 AND integrado (mergeado, PR #34)
+
+| Tarea | Circuito | Score / resultado | Verificación |
+|-------|----------|-------------------|--------------|
+| invsqrt | R1+R5 (`invsqrt_R1R5.kmb`) | Q=139, T=2,561, **score 389,261.01** | Gold PASS, dominio completo |
+| dqi | P1+P2+P3-sobre-QF | Q=1,857, T=710,312, score 2,971,470,537,625.3 (R=1.2131052140444296, 5 valor / 0 fase) | Gold PASS, 102,400 tiros |
+| dfthcsos | seg100@brot13 | Q=797, T=32,174, **score 1,257,565,658.5**, error_2 18.9592 mHa | PASS oficial, 78,080 tiros |
+| **Geomean (Kaggle v6)** | | **5.00379** (ref 58633092; calculado 4.98760) | Medido en Kaggle, nuevo mejor personal (v5 4.90803) |
+
+**QF + 15 AND (integrado en rama y mergeado):** Q=1,857, T=670,307 (barrido 364,455; omega 57,540; BM 248,312); factor DQI 8.71540152 (D-V6-1); geomean 4.98760 (refs v5). Circuito `dqi_qf_p15.kmb` (sha `60270f22…`). **Gold PASS** (Brujo, driver lean local, 483.9 s; status PASS, ve=5, pe=0, 102,400 tiros; los 5 fallos idénticos a los del Gold QF); el score 2,804,116,362,477.3 es **MEDIDO** (R=1.2131052140444296). **Integración en el repo:** rama `local/qf-p15-integracion-2026-11-20` (commit 1 `d74f60c3` QF+P1+P2+P3, commit 2 `41444adb` P15; rebuilds byte-idénticos al control QF `38b9cbf0…` y al P15 `60270f22…`); **mergeado en main (PR #34, merge commit `320312bd`, 2026-11-20 14:23:18 CST)** — ver `docs/QF_P15_AND_2026-11-20.md`.
+
+## Estado actual (2026-11-03) — histórico (solo cifras verificadas con los verificadores oficiales)
 
 | Tarea | Circuito | Score / resultado | Verificación |
 |-------|----------|-------------------|--------------|
