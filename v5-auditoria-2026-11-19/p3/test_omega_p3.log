@@ -1,0 +1,15 @@
+modulo: dqi_decoder_v1=/home/hatch/workspace/qcc-data/test-dev/espiral-prototipo/p3/src/dqi_decoder_v1.py
+[fwd] tareas=630 (esc=35 acc=595) esperado 630 = 35 + 595; bloques=90 tamanos=[7] (esperado 90 x 7)
+[fwd] orden == loop original: True
+[fwd] aplanar bloques == tareas: True
+[rev] tareas=630 (esc=35 acc=595) esperado 630 = 35 + 595; bloques=90 tamanos=[7] (esperado 90 x 7)
+[rev] orden == loop original: True
+[rev] aplanar bloques == tareas: True
+[ambos] mismo multiconjunto de tareas por i (ida vs vuelta): True
+ESTRUCTURA_OK
+[aislado fwd] muls=630 (esperado 630); T=29085 (esperado 29085 = 630*42 + 35*75); Q=1317
+[aislado rev] muls=630 (esperado 630); T=29085 (esperado 29085); Q=1317
+[aislado ida+vuelta] muls fwd=630 rev=630 (esperado 630+630); T=58170 (esperado 58170); Q=1317 (<< 1864: Omega no marca el pico del DQI)
+init_and mul/pase: 630 x 42 = 26460 T (ida); ida+vuelta 52920 T
+MEDICION_OK
+OMEGA_P3_OK
