@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Inversion GF(2^12) por torre de dos niveles GF(2^12)/GF(2^6)/GF(2^3): 75 Toffoli (vs 108 de un nivel).
+"""Inversion GF(2^12) por torre de dos niveles GF(2^12)/GF(2^6)/GF(2^3): 66 Toffoli (vs 108 de un nivel).
 
- Nivel 12->6: a = a0 + a1 y,  N = a0^2 + a0 a1 + nu a1^2 (GF(2^6)),  a^-1 = N^-1 ((a0+a1) + a1 y)     [18 + inv6 + 36 AND]
+ Nivel 12->6: a = a0 + a1 y,  N = a0^2 + a0 a1 + nu a1^2 (GF(2^6)),  a^-1 = N^-1 ((a0+a1) + a1 y)     [15 + inv6 + 30 AND]
  Nivel 6->3 : igual sobre GF(2^3) con nu' ;  inv3 es una funcion cuadratica de 3 bits (3 AND, sin mult.)   [6 + 3 + 12 = 21 AND]
 Todo uncomputo libre (HMR + correccion de fase condicionada).  Logs: logging 'dqi_tower2'.
 """

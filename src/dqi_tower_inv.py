@@ -102,8 +102,11 @@ def _plan6():
     return plan
 
 
-PLAN6 = _plan6()
-assert len(PLAN6) == 18, len(PLAN6)
+PLAN6_KAR = _plan6()
+assert len(PLAN6_KAR) == 18, len(PLAN6_KAR)
+# P15: GF(64)=GF(4)[g]/(cubica); producto de cuadraticas sobre GF(4) evaluado en P1(GF(4)) (5 puntos x 3 ANDs). Verificado 64x64.
+PLAN6 = [(17, 17, 29), (8, 8, 9), (25, 25, 20), (15, 15, 22), (56, 56, 14), (55, 55, 24), (13, 13, 50), (14, 14, 63), (3, 3, 13), (19, 19, 1), (62, 62, 57), (45, 45, 56), (44, 44, 58), (40, 40, 18), (4, 4, 40)]
+assert len(PLAN6) == 15, len(PLAN6)
 
 
 # ---------- primitivas de circuito ----------
