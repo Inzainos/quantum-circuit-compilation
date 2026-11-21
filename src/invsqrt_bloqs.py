@@ -141,8 +141,9 @@ class CopiaC0(Fase):
     nombre = "copy_c0"
     consume = ("coef", "y1")
 
-    def __init__(self, spec: PWSpec, w: list[int], offs: list[int]):
+    def __init__(self, spec: PWSpec, w: list[int], offs: list[int], trunc_low: bool = False):
         self.spec, self.w, self.offs = spec, w, offs
+        self.trunc_low = trunc_low
 
     def adapta(self, bits):
         self._exige(bits, "y1", self.spec.wc)
@@ -150,7 +151,15 @@ class CopiaC0(Fase):
             raise ErrorAncho(self.nombre, "y1", self.w[0], self.spec.wc)
 
     def aplica(self, b, R, inverse):
-        b.cx(R["coef"][self.offs[0]:self.offs[0] + self.w[0]], R["y1"][:self.spec.wc])
+        if self.trunc_low:
+            # R1 (2026-11-19, prototipo espiral Fase 1): y1 nace sin bit 0 — se
+            # copia c0[1:] a y1[1:] y y1[0] queda en |0>. CX es autoinverso, asi
+            # que el adjunto (vuelta) deshace exactamente lo mismo. La fase
+            # recibe y1[1:] y el ahorro de 1 rotacion es estructural.
+            b.cx(R["coef"][self.offs[0] + 1:self.offs[0] + self.w[0]],
+                 R["y1"][1:self.w[0]])
+        else:
+            b.cx(R["coef"][self.offs[0]:self.offs[0] + self.w[0]], R["y1"][:self.spec.wc])
 
 
 class Desnormalizar(Fase):
@@ -172,8 +181,16 @@ class FasePorBits(Fase):
     nombre = "phase"
     consume = ("y1",)
 
+    def __init__(self, skip_low: bool = False, trunc_low: bool = False):
+        self.skip_low = skip_low
+        self.trunc_low = trunc_low
+
     def aplica(self, b, R, inverse):
-        _phase_by_bits(b, R["y1"])
+        # R1 (2026-11-19): con trunc_low, y1[0] no existe (es |0> estructural);
+        # la fase recibe y1[1:] y los angulos quedan identicos a B (skip_low):
+        # el desplazamiento del arreglo compensa el de 2^(j-f+1) en _phase_by_bits.
+        y = R["y1"][1:] if self.trunc_low else R["y1"]
+        _phase_by_bits(b, y, skip_low=self.skip_low)
 
 
 class Pesada(Fase):

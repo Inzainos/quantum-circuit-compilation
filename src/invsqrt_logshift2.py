@@ -118,12 +118,23 @@ class HornerEstrecho(HornerMitad):
 
 
 class PipelineLog2(PipelineMitad):
-    def __init__(self, spec: PWSpec, sesgo: int = 0, estrecho: bool = False):
-        super().__init__(spec, sesgo)
+    def __init__(self, spec: PWSpec, sesgo: int = 0, estrecho: bool = False,
+                 trunc: tuple[int, int] = (0, 0), skip_low: bool = False, trunc_low: bool = False, r5: bool = False):
+        super().__init__(spec, sesgo, trunc, skip_low, trunc_low)
         self.estrecho = estrecho
+        # R5 (2026-11-19): sin --r5, pipeline idéntico al original (CopiaC0
+        # presente, DesnormLog sin copia). Con --r5, CopiaC0 sale de la lista
+        # y su copia CX vive dentro de DesnormLog (fold_copy=True).
+        # R1+R5 (2026-11-19): con --r1 --r5, la truncación de R1 (que vivía en
+        # CopiaC0) se re-ubica en la copia plegada (DesnormLog trunc_low=True).
+        self.r5 = r5
         self.fases = [NormalizarLog(spec) if f.nombre == "normalize" else (HornerEstrecho(spec, f.w, f.offs) if (estrecho and f.nombre == "horner") else f)
                       for f in self.fases if f.nombre != "denormalize"]
-        self.fases.append(DesnormLog(spec))
+        if r5:
+            self.fases = [f for f in self.fases if f.nombre != "copy_c0"]
+            self.fases.append(DesnormLog(spec, self.w, self.offs, fold_copy=True, trunc_low=trunc_low))
+        else:
+            self.fases.append(DesnormLog(spec))
 
     def anchos(self):
         d = super().anchos()
@@ -150,9 +161,15 @@ class PipelineLog2(PipelineMitad):
         def libera(nombre):
             b.free(R.pop(nombre))
 
+        # R5: el intercambio scratch/y1 se dispara en copy_c0 (original) o en
+        # denormalize_log (con --r5, cuando copy_c0 ya no está en la lista).
+        # Es el mismo punto del pipeline (tras Horner, antes de denorm) y el
+        # mismo orden de alloc/free, así que los índices de qubit no cambian.
+        swap = "denormalize_log" if self.r5 else "copy_c0"
+
         # --- ida ---
         for f in self.fases:
-            if f.nombre == "copy_c0":
+            if f.nombre == swap:
                 libera("scratch")
                 asigna("y1")
             if f.nombre == "horner":
@@ -162,7 +179,7 @@ class PipelineLog2(PipelineMitad):
         # --- vuelta ---
         for f in reversed(self.fases):
             f.aplica(b, R, True)
-            if f.nombre == "copy_c0":
+            if f.nombre == swap:
                 libera("y1")
                 asigna("scratch")
             if f.nombre == "horner":
@@ -192,12 +209,18 @@ if __name__ == "__main__":
     ap.add_argument("--wc", type=int, default=28)
     ap.add_argument("--dd", type=int, default=13)
     ap.add_argument("--sesgo", type=int, default=0)
+    ap.add_argument("--k1", type=int, default=0, help="B+C (C): bits bajos a 0 en c1")
+    ap.add_argument("--k2", type=int, default=0, help="B+C (C): bits bajos a 0 en c2")
+    ap.add_argument("--skip-low", action="store_true", help="B+C (B): quitar el z_pow bajo (bit 0 de y1)")
+    ap.add_argument("--r1", action="store_true", help="R1 (espiral Fase 1): y1 nace sin bit 0 (micro-tuberia bit 0 nativa; CopiaC0 trunca, FasePorBits recibe y1[1:])")
+    ap.add_argument("--r5", action="store_true", help="R5 (espiral Fase 1): eliminar copy_c0 (etapa fantasma); su copia CX c[0]->y1 vive dentro de denorm (DesnormLog fold_copy)")
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
     spec = PWSpec(deg=a.deg, j=a.j, wc=a.wc, dd=a.dd)
-    params = {"deg": a.deg, "j": a.j, "wc": a.wc, "dd": a.dd, "sesgo": a.sesgo}
+    params = {"deg": a.deg, "j": a.j, "wc": a.wc, "dd": a.dd, "sesgo": a.sesgo,
+              "k1": a.k1, "k2": a.k2, "skip_low": a.skip_low, "r1": a.r1, "r5": a.r5}
     t0 = time.time()
-    circ = PipelineLog2(spec, a.sesgo).construye()
+    circ = PipelineLog2(spec, a.sesgo, trunc=(a.k1, a.k2), skip_low=a.skip_low, trunc_low=a.r1, r5=a.r5).construye()
     q = int(circ.num_qubits)
     t_toff = int(circ.operation_statistics().num_toffoli_like)
     log.info("circuito: Q=%d T=%d", q, t_toff)

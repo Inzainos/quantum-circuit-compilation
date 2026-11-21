@@ -40,10 +40,11 @@ log = logging.getLogger("halfsplit")
 
 
 @functools.lru_cache(maxsize=None)
-def tabla_mitad(spec: PWSpec, sesgo: int = 0) -> tuple[list[list[int]], list[int]]:
+def tabla_mitad(spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0)) -> tuple[list[list[int]], list[int]]:
     """b[i][addr], w[i]. addr = f + sel*2^j, sel=1 -> M<2 (factor 1), sel=0 -> M>=2 (factor 1/sqrt2).
 
     `sesgo` resta ese numero de ulps (2^-wc) a a0: compensa el sesgo positivo de los pisos (c>>m) de Horner.
+    `trunc` (B+C, C): pone a 0 los bits bajos de c1/c2 — trunc[0] bits de b[1], trunc[1] bits de b[2].
     """
     d, j, wc = spec.deg, spec.j, spec.wc
     h = 2.0 ** -j
@@ -65,6 +66,11 @@ def tabla_mitad(spec: PWSpec, sesgo: int = 0) -> tuple[list[list[int]], list[int
                 if i == 0:
                     mag = min(max(mag - sesgo, 0), 2 ** wc - 1)
                 b[i][f + (sel << j)] = mag
+    # B+C (C): poner a 0 los bits bajos de c1/c2 (trunc[0] bits de b[1], trunc[1] bits de b[2]).
+    for ci, k in ((1, trunc[0]), (2, trunc[1])):
+        if k:
+            mask = ~((1 << k) - 1)
+            b[ci] = [v & mask for v in b[ci]]
     w = [max(max(row).bit_length(), 1) for row in b]
     return b, w
 
@@ -138,9 +144,13 @@ class TablaLookupMitad(Fase):
     nombre = "lookup"
     consume = ("x", "sel", "coef")
 
-    def __init__(self, spec: PWSpec, sesgo: int = 0):
+    def __init__(self, spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0)):
         self.spec = spec
-        self.b, self.w = tabla_mitad(spec, sesgo)
+        self.b, self.w = tabla_mitad(spec, sesgo, trunc)
+        # B+C (C): bits de coeficiente muertos en toda la tabla (tras truncar).
+        self.dead = {ci: frozenset(t for t in range(self.w[ci])
+                                   if all(((v >> t) & 1) == 0 for v in self.b[ci]))
+                     for ci in range(1, spec.deg + 1)}
         self.offs = [sum(self.w[:i]) for i in range(spec.deg + 1)]
         self.table = [sum(self.b[i][a] << self.offs[i] for i in range(spec.deg + 1))
                       for a in range(1 << (spec.j + 1))]
@@ -160,8 +170,9 @@ class HornerMitad(Fase):
     nombre = "horner"
     consume = ("x", "coef", "scratch")
 
-    def __init__(self, spec: PWSpec, w: list[int], offs: list[int]):
+    def __init__(self, spec: PWSpec, w: list[int], offs: list[int], dead=None):
         self.spec, self.w, self.offs = spec, w, offs
+        self.dead = dead or {}
 
     def adapta(self, bits):
         self._exige(bits, "scratch", max(self.w))
@@ -177,20 +188,32 @@ class HornerMitad(Fase):
         with b.mark(self.nombre):
             for i in order:
                 for m, ctl in (reversed(u_ctl) if inverse else u_ctl):
-                    terms = [(c[i + 1][t], t - m) for t in range(m, w[i + 1])]
+                    # B+C (C): omitir los términos cuyo bit fuente es 0 en toda la tabla.
+                    # CORRECCIÓN (sonda 2026-11-14): el filtro SOLO vale para la fila
+                    # i == deg-1, cuya fuente es el coeficiente TOPE c[deg], que el
+                    # Horner nunca modifica. Las filas i < deg-1 leen c[i+1]' — el
+                    # INTERMEDIO tras la fila i+1 — y sus bits NO son los de la tabla:
+                    # p. ej. c1'[1] = prod1[0] XOR prod1[1] = 1 en x=2824959 y x=234495
+                    # aunque c1[1] = 0 en toda la tabla truncada. Filtrar ahí resta 1
+                    # de menos en c0 (y1 +1 ulp, +2^s tras desnormalizar; C medía
+                    # 0.9177 @ 2824959 en vez del clásico 0.8823). Por eso el ahorro
+                    # real de C es 4 T (solo c2), no 8 T.
+                    dead_i = self.dead.get(i + 1, ()) if i == s.deg - 1 else ()
+                    terms = [(c[i + 1][t], t - m) for t in range(m, w[i + 1])
+                             if t not in dead_i]
                     if terms:
                         _add_row(b, inverse, ctl, terms, c[i], R["scratch"], subtract=True)
 
 
 class PipelineMitad:
-    def __init__(self, spec: PWSpec, sesgo: int = 0):
+    def __init__(self, spec: PWSpec, sesgo: int = 0, trunc: tuple[int, int] = (0, 0), skip_low: bool = False, trunc_low: bool = False):
         self.spec = spec
-        t = TablaLookupMitad(spec, sesgo)
+        t = TablaLookupMitad(spec, sesgo, trunc)
         self.w, self.offs = t.w, t.offs
         self.fases: list[Fase] = [Normalizar(spec), GiroMitad(spec), t,
-                                  HornerMitad(spec, t.w, t.offs),
-                                  CopiaC0(spec, t.w, t.offs), Desnormalizar(spec)]
-        self.media = FasePorBits()
+                                  HornerMitad(spec, t.w, t.offs, t.dead),
+                                  CopiaC0(spec, t.w, t.offs, trunc_low), Desnormalizar(spec)]
+        self.media = FasePorBits(skip_low, trunc_low)
 
     def anchos(self) -> dict[str, int]:
         s = self.spec
