@@ -1,0 +1,40 @@
+--- a/src/dqi_decoder_v1.py	2026-11-20 15:24:43.000000000 -0600
++++ b/src/dqi_decoder_v1.py	2026-11-20 20:54:32.494790180 -0600
+@@ -149,28 +149,27 @@
+ 
+ 
+ def build_omega_tmp(b, field, sig, S, LO, adjoint):
+-    """omega in place como dqi_omega_stage.build_omega, pero delta = sigma_0^-1 se calcula (torre, 75 Toffoli) solo durante cada escalado.
+-    P3: los 630 mul/pase se emiten como 90 bloques de 7 (misma secuencia de puertas que hoy)."""
++    """omega in place como dqi_omega_stage.build_omega.
++    HOIST (QF+P15+H): delta = sigma_0^-1 se calcula UNA vez por direccion (antes 35 veces): sigma_0 no cambia durante omega.
++    Ahorro: 34 x 66 T por direccion (4,488 T en total). Vivo extra durante la etapa: delta (12) + andamio de la torre (18); la frontera
++    es 1,794 y el pico global (BM) 1,857, asi que Q no cambia.
++    P3: los 630 mul/pase se emiten como 90 bloques de 7 (misma secuencia de puertas de multiplicacion que antes)."""
+     with b.mark('omega_rev' if adjoint else 'omega_fwd'):
++        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+         for block in _omega_mul_blocks(LO, adjoint):
+             for kind, i, j in block:
+                 if kind == 'esc':
++                    P = b.alloc_qubits(DEG)
+                     if not adjoint:
+-                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+-                        P = b.alloc_qubits(DEG)
+                         ixor_kmul(b, sig[0], S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                         b.del_gf2_mul(delta, P, target=S[i], field=field)
+-                        b.swap(S[i], P); b.free(P)
+-                        vi.undo(); b.free(delta)
+                     else:
+-                        delta = b.alloc_qubits(DEG); vi = ValueInv(b, sig[0], delta).forward()
+-                        P = b.alloc_qubits(DEG)
+                         ixor_kmul(b, delta, S[i], P)  # OMEGA-KARATSUBA (antes init_gf2_mul, 63 T)
+                         b.del_gf2_mul(sig[0], P, target=S[i], field=field)
+-                        b.swap(S[i], P); b.free(P)
+-                        vi.undo(); b.free(delta)
++                    b.swap(S[i], P); b.free(P)
+                 else:
+                     ixor_kmul(b, sig[j], S[i - j], S[i])  # OMEGA-KARATSUBA (antes ixor_gf2_mul, 63 T)
++        vi.undo(); b.free(delta)
+ 
+ 
+ def build_decoder(n=70, LS=36, LO=35, m=4095, positions=None, ida_y_vuelta=True):
