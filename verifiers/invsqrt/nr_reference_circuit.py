@@ -340,11 +340,14 @@ def _compute_y1(builder: km.CircuitBuilder, inverse: bool, prec: Precision, x: k
                 _denormalize(builder, inverse, flags, y1)
 
 
-def _phase_by_bits(builder: km.CircuitBuilder, y: km.array) -> None:
-    """Applies `y / 2^len(y)` turns via per-bit `Z_POW`."""
+def _phase_by_bits(builder: km.CircuitBuilder, y: km.array, skip_low: bool = False) -> None:
+    """Applies `y / 2^len(y)` turns via per-bit `Z_POW`.
+
+    B+C (B): with `skip_low`, the lowest `z_pow` (bit 0, smallest angle) is omitted.
+    """
     f = len(y)
     with builder.mark('phase_by_bits'):
-        for j in range(f):
+        for j in range(1 if skip_low else 0, f):
             builder.z_pow(y[j], Fraction(2) ** (j - f + 1))  # 2^(j - f) turns.
 
 
