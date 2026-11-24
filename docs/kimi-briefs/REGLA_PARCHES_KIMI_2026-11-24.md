@@ -32,10 +32,22 @@ Quien los necesite los toma de GitHub o del disco:
 - Lección vigente para todos: antes de concluir que algo está perdido o de pedirle a
   Elán que lo re-envíe, se verifica por contenido/hash y por nombres parecidos, no
   solo por el nombre exacto.
-- Precisión de Elán (12:01): el problema no es solo pedirle algo que ya tiene — es que
-  el pedido lo pone a ÉL como el cuello de botella, como si no hubiera pasado las cosas
-  y por eso no se trabaja, cuando él ya las pasó. Si aun así algo no se localiza, el
-  pedido dice claro "no logramos localizar lo que ya nos pasaste" — el fallo es
-  nuestro, jamás enmarcado como que él no lo pasó. Vale también para decisiones: si
-  algo "no está decidido", verificar en el tablero y en sus mensajes antes de volver a
-  preguntarle como si no hubiera decidido.
+- Precisión de Elán (12:01), textual: "No, lo que a mí me molesta no es eso, sino que
+  siguen pidiéndome cosas que yo ya les había pasado, entonces me hacen ver que el que
+  no les ha pasado las cosas soy yo y por eso no están trabajando cuando yo ya les pasé
+  las cosas." El problema no es solo pedirle algo que ya tiene — es que el pedido lo
+  pone a ÉL como el cuello de botella, como si no hubiera pasado las cosas y por eso no
+  se trabaja, cuando él ya las pasó. El P15 es el ejemplo: los briefs concluyeron "NO
+  ESTÁ EN DISCO" y le pidieron re-enviarlo, como si no lo hubiera mandado, cuando lo
+  mandó hace 4 días. Es un tema de justicia con él: el que no encuentra algo somos
+  nosotros, no él el que no lo dio.
+- **Regla vigente, para todos los frentes y para lo que se le pida a Kimi a través
+  nuestro:**
+  1. Antes de pedirle a Elán algo que él pudo haber pasado ya, el frente verifica
+     EXHAUSTIVAMENTE: disco, GitHub, TABLERO, contenido/hash y nombres parecidos.
+     Pedirle re-enviar es el último recurso, no el primero.
+  2. Si aun así no se encuentra, el pedido dice claro: "no logramos localizar lo que ya
+     nos pasaste" — el fallo es nuestro, jamás enmarcado como que él no lo pasó.
+  3. Esto vale también para decisiones: si algo "no está decidido", se verifica en el
+     tablero y en sus mensajes antes de volver a preguntarle como si no hubiera
+     decidido.
