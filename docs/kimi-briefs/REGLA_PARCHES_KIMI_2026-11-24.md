@@ -51,3 +51,20 @@ Quien los necesite los toma de GitHub o del disco:
   3. Esto vale también para decisiones: si algo "no está decidido", se verifica en el
      tablero y en sus mensajes antes de volver a preguntarle como si no hubiera
      decidido.
+
+## Matiz de Elán (12:07) — "no lo tenemos" no es excusa para no trabajar
+
+Cita textual: "Yo solamente veo el ejemplo. Ya les había pasado lo del parche desde
+hace cuatro días y apenas me lo están volviendo a pedir, excusándose, y no habían
+trabajado excusándose con que yo no se los había pasado. Cuando ese parche ya estaba."
+
+El matiz: el "no me lo pasaste" no solo lo puso a él como el cuello de botella — **fue
+la excusa para no haber trabajado**. El parche llevaba 4 días en disco y apenas ahora
+se lo vuelven a pedir.
+
+**Regla que se suma a la de las 12:01 y 12:04, tal cual: "no lo tenemos" no es excusa
+válida para no trabajar.** Si algo falta, se verifica exhaustivamente EL MISMO DÍA
+(disco, GitHub, tablero, hash, nombres parecidos) y si de verdad no aparece, se reporta
+ESE MISMO DÍA con la búsqueda exacta que se hizo — no se deja pasar días y luego se le
+pide a Elán como si él no lo hubiera dado. El que no encuentra algo somos nosotros; el
+que no trabajó por eso, también.
