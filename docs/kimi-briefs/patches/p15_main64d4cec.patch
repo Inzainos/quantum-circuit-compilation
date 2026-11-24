@@ -1,0 +1,465 @@
+diff -ruN -x __pycache__ mainsrc/src/bm_fused.py src_p15/bm_fused.py
+--- a/src/bm_fused.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/bm_fused.py	2026-11-19 23:02:41.683025612 -0600
+@@ -31,12 +31,15 @@
+     def forward_round(self, r: int):
+         b = self.b
+         p = b.alloc_qubits(1)[0]
+-        D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
++        D = b.alloc_qubits(DEG)                       # QF: X y alpha se reservan justo cuando se usan
+         self._disc(r, D)
+         self._flags(D, p, inverse=False)
++        self._dupd(p, inverse=False)                 # QF: d no lo usa ni alpha ni el update; aqui el vivo es minimo
++        X = b.alloc_qubits(DEG)
+         b.cx(self.sigma[0], X)
+         with b.mark('bm_alpha'):
+             P = b.init_gf2_mul(X, D, field=self.f)
++            alpha = b.alloc_qubits(DEG)
+             scaf = self._inv_init(P, alpha)          # inv(P) directo en alpha
+             self._alpha_sel_fused(P, alpha, p)
+         with b.mark('bm_swap'):
+@@ -45,14 +48,15 @@
+         with b.mark('bm_update'):
+             for i in range(self.bu(r) + 1):
+                 self._mul(alpha, self.tau[i], self.sigma[i])
+-        self._dupd(p, inverse=False)
+         with b.mark('bm_alpha'):
+             self._alpha_sel_fused(P, alpha, p)       # restaura P y alpha=inv(P)
+             self._inv_del(scaf, P, alpha)            # undo inv (hmr en alpha -> 0)
+             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
++            b.free(alpha)                            # QF: alpha == 0 aqui
+         self._xmux(X, p)
++        b.free(X)                                    # QF: X == 0 tras el xmux
+         self._dclear(D, p)
+-        b.free(alpha); b.free(X); b.free(D)
++        b.free(D)
+         self.tau = [self.tau[-1]] + self.tau[:-1]
+         self.flags.append(p)
+ 
+@@ -60,14 +64,15 @@
+         b = self.b
+         p = self.flags.pop()
+         self.tau = self.tau[1:] + [self.tau[0]]
+-        D = b.alloc_qubits(DEG); X = b.alloc_qubits(DEG); alpha = b.alloc_qubits(DEG)
++        D = b.alloc_qubits(DEG)
+         self._dclear(D, p)
++        X = b.alloc_qubits(DEG)
+         self._xmux(X, p)
+         with b.mark('bm_alpha'):
+             P = b.init_gf2_mul(X, D, field=self.f)
++            alpha = b.alloc_qubits(DEG)
+             scaf = self._inv_init(P, alpha)
+             self._alpha_sel_fused(P, alpha, p)
+-        self._dupd(p, inverse=True)
+         with b.mark('bm_update'):
+             for i in reversed(range(self.bu(r) + 1)):
+                 self._mul(alpha, self.tau[i], self.sigma[i])
+@@ -78,10 +83,13 @@
+             self._alpha_sel_fused(P, alpha, p)
+             self._inv_del(scaf, P, alpha)
+             b.del_gf2_mul(X, D, target=P, field=self.f); b.free(P)
++            b.free(alpha)
+         b.cx(self.sigma[0], X)
++        b.free(X)
++        self._dupd(p, inverse=True)                  # QF: espejo exacto del lugar nuevo de la ida
+         self._flags(D, p, inverse=True)
+         self._disc_clear(r, D)
+-        b.free(alpha); b.free(X); b.free(D); b.free(p)
++        b.free(D); b.free(p)
+ 
+ 
+ def build_stage_fused(n=70, LS=36, degree=12, ida_y_vuelta=True) -> km.Circuit:
+diff -ruN -x __pycache__ mainsrc/src/dqi_decoder_v1.py src_p15/dqi_decoder_v1.py
+--- a/src/dqi_decoder_v1.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/dqi_decoder_v1.py	2026-11-19 23:02:41.683948819 -0600
+@@ -49,35 +49,37 @@
+ 
+ 
+ def build_scan_inv(b, field, sig, om, E, positions=None, tower=True):
++    """Barrido por posicion con s y dd formados EN EL SITIO sobre sig[0] y sig[1] (QF: -24 qubits, 0 Toffoli).
++
++    s  = sum_i pw[i] sig_i      (pw[0] = 1)      -> sig[0] += sum_{i>=1} pw[i] sig_i              (CX; invertible)
++    dd = sum_{i impar} pw[i-1] sig_i (pw[0] = 1) -> sig[1] += sum_{i impar>=3} pw[i-1] sig_i      (CX; invertible)
++    ValueInv3 cambia dd a coordenadas de torre en el sitio y lo devuelve a valor (solo CX). Orden: s primero (usa sig[1]
++    original), luego dd; se deshace en orden inverso."""
+     n_pos = len(E)
+     positions = range(min(n_pos, G.Q - 1)) if positions is None else positions
+-    apow = [_alpha_pow_bits(s) for s in range(2 * DEG - 1)]
+-    # Reutilizar registros entre posiciones para reducir overhead de alloc/free
+-    s = b.alloc_qubits(DEG); dd = b.alloc_qubits(DEG); w = b.alloc_qubits(DEG)
++    apow = [_alpha_pow_bits(s_) for s_ in range(2 * DEG - 1)]
++    assert tower, "QF: solo ruta de torre"
++    w = b.alloc_qubits(DEG)
+     tmp = b.alloc_qubits(1)[0]; f = b.alloc_qubits(1)[0]; lad = b.alloc_qubits(DEG - 2); g = b.alloc_qubits(1)[0]   # un solo qubit para el AND de fase (se usa de a uno)
++    s = sig[0]
+     for p in positions:
+         r = _alpha_pow_bits(-p)
+         with b.mark('scan_pos'):
+             pw = [1]
+             for i in range(1, max(len(sig), len(om))):
+                 pw.append(G.mul(pw[-1], r))
+-            src_s = _linear_sources(pw[:len(sig)], sig)
++            src_s = _linear_sources(pw[1:len(sig)], sig[1:])
+             src_u = _linear_sources(pw[:len(om)], om)
+-            dco = [pw[i - 1] if i % 2 == 1 else 0 for i in range(len(sig))]
+-            src_d = _linear_sources(dco, sig)
+-            if tower:
+-                src_d = _to_coords(src_d)
+-            _emit_linear(b, src_s, s)
++            dco = [pw[i - 1] if (i % 2 == 1 and i >= 3) else 0 for i in range(2, len(sig))]
++            src_d = _linear_sources(dco, sig[2:])
++            _emit_linear(b, src_s, s)                 # sig[0] = s
+             b.x(s)
+             b.init_and(s[0], s[1], lad[0])
+             for i in range(2, DEG - 1):
+                 b.init_and(lad[i - 2], s[i], lad[i - 1])
+             b.init_and(lad[DEG - 3], s[DEG - 1], f)
+-            _emit_linear(b, src_d, dd)
+-            if tower:
+-                TI = TowerInv(b, dd, w); TI.forward()
+-            else:
+-                _, scaf = b.init_gf2_inverse_with_scaffold(dd, target=w, field=field)
++            _emit_linear(b, src_d, sig[1])            # sig[1] = dd (valor)
++            VI = ValueInv(b, sig[1], w).forward()
+             # fase: (-1)^{ sum_a (f & u_a) * t_a },  t_a = sum_k E[p][k] * sum_{b in srcs(a,k)} w_b
+             # sin registros t ni u: u_a se forma en un solo qubit 'tmp' y la fase se aplica con CZ(g_a, w_b) condicionados a E[p][k]
+             for a in range(DEG):
+@@ -93,19 +95,15 @@
+                 b.del_and(f, tmp, g)
+                 for q in src_u[a]:
+                     b.cx(q, tmp)
+-            if tower:
+-                TI.undo()
+-            else:
+-                b.del_gf2_inverse_with_scaffold(dd, target=w, scaffold=scaf, field=field)
+-                b.free(scaf)
+-            _emit_linear(b, src_d, dd)
++            VI.undo()
++            _emit_linear(b, src_d, sig[1])            # sig[1] restaurado
+             b.del_and(lad[DEG - 3], s[DEG - 1], f)
+             for i in reversed(range(2, DEG - 1)):
+                 b.del_and(lad[i - 2], s[i], lad[i - 1])
+             b.del_and(s[0], s[1], lad[0])
+             b.x(s)
+-            _emit_linear(b, src_s, s)
+-    for q in (s, dd, w, lad):
++            _emit_linear(b, src_s, s)                 # sig[0] restaurado
++    for q in (w, lad):
+         b.free(q)
+     b.free(tmp); b.free(f); b.free(g)
+ 
+diff -ruN -x __pycache__ mainsrc/src/dqi_kmul42.py src_p15/dqi_kmul42.py
+--- a/src/dqi_kmul42.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/dqi_kmul42.py	2026-11-19 23:02:41.683591285 -0600
+@@ -75,24 +75,9 @@
+ 
+ 
+ def ixor_kmul42(b: km.CircuitBuilder, x: km.array, y: km.array, target: km.array) -> None:
+-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+-    for fx, fy, tm in PLAN42:
+-        qx, ux = _form_to(b, fx, x, tx)
+-        qy, uy = _form_to(b, fy, y, ty)
+-        b.init_and(qx, qy, t)
+-        for j in range(DEG):
+-            if (tm >> j) & 1:
+-                b.cx(t, target[j])
+-        b.del_and(qx, qy, t)
+-        if ux:
+-            for i in range(DEG):
+-                if (fx >> i) & 1:
+-                    b.cx(x[i], tx)
+-        if uy:
+-            for i in range(DEG):
+-                if (fy >> i) & 1:
+-                    b.cx(y[i], ty)
+-    b.free(tx); b.free(ty); b.free(t)
++    """Toom-4 42 AND sin ancillas (QF): formas lineales en el sitio + Toffoli con fan-out. Mismo T (42)."""
++    import qf
++    qf.mul_terms_init(b, PLAN42, DEG, DEG, x, y, target, DEG)
+ 
+ 
+ if __name__ == "__main__":
+diff -ruN -x __pycache__ mainsrc/src/dqi_tower_inv.py src_p15/dqi_tower_inv.py
+--- a/src/dqi_tower_inv.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/dqi_tower_inv.py	2026-11-19 23:02:41.892783271 -0600
+@@ -102,8 +102,11 @@
+     return plan
+ 
+ 
+-PLAN6 = _plan6()
+-assert len(PLAN6) == 18, len(PLAN6)
++PLAN6_KAR = _plan6()
++assert len(PLAN6_KAR) == 18, len(PLAN6_KAR)
++# P15: GF(64)=GF(4)[g]/(cubica); producto de cuadraticas sobre GF(4) evaluado en P1(GF(4)) (5 puntos x 3 ANDs). Verificado 64x64.
++PLAN6 = [(17, 17, 29), (8, 8, 9), (25, 25, 20), (15, 15, 22), (56, 56, 14), (55, 55, 24), (13, 13, 50), (14, 14, 63), (3, 3, 13), (19, 19, 1), (62, 62, 57), (45, 45, 56), (44, 44, 58), (40, 40, 18), (4, 4, 40)]
++assert len(PLAN6) == 15, len(PLAN6)
+ 
+ 
+ # ---------- primitivas de circuito ----------
+@@ -129,31 +132,16 @@
+ 
+ 
+ def mul6_init(b, x, y, target):
+-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]; t = b.alloc_qubits(1)[0]
+-    for fx, fy, tm in PLAN6:
+-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
+-        b.init_and(qx, qy, t)
+-        for j in range(6):
+-            if (tm >> j) & 1: b.cx(t, target[j])
+-        b.del_and(qx, qy, t)
+-        if ux: _unform(b, fx, x, tx)
+-        if uy: _unform(b, fy, y, ty)
+-    b.free(tx); b.free(ty); b.free(t)
++    import qf
++    qf.mul_terms_init(b, PLAN6, 6, 6, x, y, target, 6)
+ 
+ 
+ def mul6_del(b, x, y, target):
+-    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli)."""
++    """target == x*y  ->  0, con medicion X y fase corregida (0 Toffoli). Sin ancillas (formas en el sitio)."""
++    import qf
+     m = b.alloc_bits(6)
+     b.hmr(target, m)
+-    tx = b.alloc_qubits(1)[0]; ty = b.alloc_qubits(1)[0]
+-    for fx, fy, tm in PLAN6:
+-        qx, ux = _form(b, fx, x, tx); qy, uy = _form(b, fy, y, ty)
+-        for j in range(6):
+-            if (tm >> j) & 1:
+-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
+-        if ux: _unform(b, fx, x, tx)
+-        if uy: _unform(b, fy, y, ty)
+-    b.free(tx); b.free(ty)
++    qf.mul_terms_phase(b, PLAN6, 6, 6, x, y, m, 6)
+ 
+ 
+ class TowerInv:
+diff -ruN -x __pycache__ mainsrc/src/dqi_tower_inv2.py src_p15/dqi_tower_inv2.py
+--- a/src/dqi_tower_inv2.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/dqi_tower_inv2.py	2026-11-19 23:02:41.877814671 -0600
+@@ -119,30 +119,15 @@
+ 
+ 
+ def mulN_init(b, plan, n, x, y, target):
+-    tx, ty, t = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
+-    for fx, fy, tm in plan:
+-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
+-        b.init_and(qx, qy, t)
+-        for j in range(n):
+-            if (tm >> j) & 1: b.cx(t, target[j])
+-        b.del_and(qx, qy, t)
+-        if ux: _unform(b, fx, x, n, tx)
+-        if uy: _unform(b, fy, y, n, ty)
+-    b.free(tx); b.free(ty); b.free(t)
++    import qf
++    qf.mul_terms_init(b, plan, n, n, x, y, target, n)
+ 
+ 
+ def mulN_del(b, plan, n, x, y, target):
++    import qf
+     m = b.alloc_bits(n)
+     b.hmr(target, m)
+-    tx, ty = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
+-    for fx, fy, tm in plan:
+-        qx, ux = _form(b, fx, x, n, tx); qy, uy = _form(b, fy, y, n, ty)
+-        for j in range(n):
+-            if (tm >> j) & 1:
+-                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
+-        if ux: _unform(b, fx, x, n, tx)
+-        if uy: _unform(b, fy, y, n, ty)
+-    b.free(tx); b.free(ty)
++    qf.mul_terms_phase(b, plan, n, n, x, y, m, n)
+ 
+ 
+ def inv8_init(b, x, target):
+@@ -154,10 +139,8 @@
+         mk = (1 << i) | (1 << j)
+         outs = [o for o in range(3) if ANF[o][mk]]
+         if outs:
+-            t = b.alloc_qubits(1)[0]
+-            b.init_and(x[i], x[j], t)
+-            for o in outs: b.cx(t, target[o])
+-            b.del_and(x[i], x[j], t); b.free(t)
++            import qf
++            qf.fan_ccx(b, x[i], x[j], target, sum(1 << o for o in outs), 3)   # QF: 1 Toffoli con fan-out, sin ancilla
+ 
+ 
+ def inv8_del(b, x, target):
+diff -ruN -x __pycache__ mainsrc/src/dqi_tower_inv3.py src_p15/dqi_tower_inv3.py
+--- a/src/dqi_tower_inv3.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/dqi_tower_inv3.py	2026-11-19 23:02:41.877860652 -0600
+@@ -62,29 +62,19 @@
+ 
+ 
+ def _mulN_to(b, plan, n, x, y, target_masks, target):
+-    """target ^= producto segun plan, con mascaras de salida ya mapeadas (lista de (fx, fy, mask_bits_de_target))."""
+-    tx, ty, t = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
+-    for fx, fy, tm in target_masks:
+-        qx, ux = T2._form(b, fx, x, n, tx); qy, uy = T2._form(b, fy, y, n, ty)
+-        b.init_and(qx, qy, t)
+-        for j in range(len(target)):
+-            if (tm >> j) & 1: b.cx(t, target[j])
+-        b.del_and(qx, qy, t)
+-        if ux: T2._unform(b, fx, x, n, tx)
+-        if uy: T2._unform(b, fy, y, n, ty)
+-    b.free(tx); b.free(ty); b.free(t)
++    """target ^= producto segun plan, con mascaras de salida ya mapeadas (lista de (fx, fy, mask_bits_de_target)). Sin ancillas."""
++    import qf
++    qf.mul_terms_init(b, target_masks, n, n, x, y, target, len(target))
+ 
+ 
+ def _phase_terms(b, n, x, y, terms_with_bits, m):
+-    """Para cada termino (fx, fy, bits) aplica CZ(fx(x), fy(y)) condicionado a cada bit medido m[j], j en bits."""
+-    tx, ty = b.alloc_qubits(1)[0], b.alloc_qubits(1)[0]
++    """Para cada termino (fx, fy, bits) aplica CZ(fx(x), fy(y)) condicionado a cada bit medido m[j], j en bits. Sin ancillas."""
++    import qf
+     for fx, fy, bits in terms_with_bits:
+-        qx, ux = T2._form(b, fx, x, n, tx); qy, uy = T2._form(b, fy, y, n, ty)
++        qx, ix = qf.form_ip(b, fx, x, n); qy, iy = qf.form_ip(b, fy, y, n)
+         for j in bits:
+             b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
+-        if ux: T2._unform(b, fx, x, n, tx)
+-        if uy: T2._unform(b, fy, y, n, ty)
+-    b.free(tx); b.free(ty)
++        qf.unform_ip(b, iy); qf.unform_ip(b, ix)
+ 
+ 
+ def _bits(mask):
+diff -ruN -x __pycache__ mainsrc/src/qf.py src_p15/qf.py
+--- a/src/qf.py	1969-12-31 18:00:00.000000000 -0600
++++ b/src/qf.py	2026-11-19 23:02:41.877992408 -0600
+@@ -0,0 +1,57 @@
++"""Helpers sin ancillas para productos de torre: formas lineales EN EL SITIO (CX) y Toffoli con fan-out en el objetivo.
++Mismo conteo de Toffoli que init_and/del_and (1 por termino), 0 qubits temporales."""
++import logging
++log = logging.getLogger("qf")
++
++
++def form_ip(b, form, reg, n):
++    """Devuelve (qubit, info). Si la forma es un solo bit, es ese qubit. Si no, la acumula EN EL SITIO en el pivote (CX)."""
++    bits = [i for i in range(n) if (form >> i) & 1]
++    if len(bits) == 1:
++        return reg[bits[0]], None
++    p = bits[0]
++    for i in bits[1:]:
++        b.cx(reg[i], reg[p])
++    return reg[p], (reg, p, bits[1:])
++
++
++def unform_ip(b, info):
++    if info is None:
++        return
++    reg, p, rest = info
++    for i in rest:
++        b.cx(reg[i], reg[p])
++
++
++def fan_ccx(b, qx, qy, target, tm, n):
++    """target[j] ^= qx & qy para cada bit j de la mascara tm, con UN Toffoli y sin qubit auxiliar."""
++    S = [j for j in range(n) if (tm >> j) & 1]
++    if not S:
++        return
++    p = S[0]
++    for j in S[1:]:
++        b.cx(target[p], target[j])
++    b.ccx(qx, qy, target[p])
++    for j in S[1:]:
++        b.cx(target[p], target[j])
++
++
++def mul_terms_init(b, terms, nx, ny, x, y, target, nt):
++    for fx, fy, tm in terms:
++        qx, ix = form_ip(b, fx, x, nx)
++        qy, iy = form_ip(b, fy, y, ny)
++        fan_ccx(b, qx, qy, target, tm, nt)
++        unform_ip(b, iy)
++        unform_ip(b, ix)
++
++
++def mul_terms_phase(b, terms, nx, ny, x, y, m, nt):
++    """Para cada termino aplica CZ(fx(x), fy(y)) condicionado a cada bit medido m[j] de la mascara."""
++    for fx, fy, tm in terms:
++        qx, ix = form_ip(b, fx, x, nx)
++        qy, iy = form_ip(b, fy, y, ny)
++        for j in range(nt):
++            if (tm >> j) & 1:
++                b.push_condition(m[j]); b.cz(qx, qy); b.pop_condition()
++        unform_ip(b, iy)
++        unform_ip(b, ix)
+diff -ruN -x __pycache__ mainsrc/src/tower_inv3_e1d.py src_p15/tower_inv3_e1d.py
+--- a/src/tower_inv3_e1d.py	2026-11-19 12:02:20.000000000 -0600
++++ b/src/tower_inv3_e1d.py	2026-11-19 23:02:41.879755723 -0600
+@@ -40,10 +40,10 @@
+ 
+ 
+ class Inner6E1d(Inner6):
+-    """Inner6 que libera N' tras computar r, antes de los productos en y."""
++    """Inner6 que libera N' tras computar r y reserva el resultado (6) DESPUES, antes de los productos en y."""
+ 
+     def forward(self):
+-        b, x, y = self.b, self.x, self.y
++        b, x = self.b, self.x
+         a0, a1 = x[0:3], x[3:6]
+         N = b.alloc_qubits(3)
+         T2.mulN_init(b, T2.PLAN3, 3, a0, a1, N)
+@@ -51,14 +51,16 @@
+         T2._lin(b, T2.NUSQ8, a1, N)
+         r = b.alloc_qubits(3)
+         T2.inv8_init(b, N, r)
+-        self.R = {'N': N, 'r': r}
+         # --- E1d: liberar N' aqui (no se usa en los productos) ---
+         _free_Np(b, x, N)
+         self.R = {'r': r}
++        y = b.alloc_qubits(6)                          # QF: y (rc) nace aqui -> vivo maximo 15 en vez de 18
++        self.y = y
+         _xor_in(b, a1, a0)
+         T2.mulN_init(b, T2.PLAN3, 3, r, a0, y[0:3])
+         T2.mulN_init(b, T2.PLAN3, 3, r, a1, y[3:6])
+         _xor_in(b, a1, a0)
++        return y
+ 
+ 
+ class TowerInv3E1d:
+@@ -76,9 +78,8 @@
+         T2._lin(b, T1.SQ, a0, N)
+         T2._lin(b, T1.NUSQ, a1, N)
+         apply_inplace(b, OPS_P2C, N)
+-        rc = b.alloc_qubits(6)
+-        self.inner = Inner6E1d(b, N, rc)
+-        self.inner.forward()
++        self.inner = Inner6E1d(b, N, None)
++        rc = self.inner.forward()
+         apply_inplace(b, OPS_C2P, rc)
+         _xor_in(b, a1, a0)
+         _mulN_to(b, None, 6, rc, a0, W0, w)
+@@ -97,17 +98,26 @@
+         _phase_terms(b, 6, rc, a1, [(fx, fy, _bits(mk)) for fx, fy, mk in W1], m)
+         _xor_in(b, a1, a0)
+         apply_inplace(b, OPS_C2P, rc, inverse=True)
+-        # recomputar SOLO N' (6 T; r sigue vivo) y correr inner.undo() estandar
++        # QF: primero se deshace y (rc) con r y N, se libera rc, y SOLO entonces se recomputa N' (6 T): vivo maximo 15
++        r = self.inner.R['r']
++        ia0, ia1 = N[0:3], N[3:6]
++        _xor_in(b, ia1, ia0)
++        T2.mulN_del(b, T2.PLAN3, 3, r, ia1, rc[3:6])
++        T2.mulN_del(b, T2.PLAN3, 3, r, ia0, rc[0:3])
++        _xor_in(b, ia1, ia0)
++        b.free(rc)
+         Np = _recompute_Np(b, N)
+-        inner2 = Inner6(b, N, rc)
+-        inner2.R = {'N': Np, 'r': self.inner.R['r']}
+-        inner2.undo()
++        T2.inv8_del(b, Np, r)
++        T2._lin(b, T2.NUSQ8, ia1, Np)
++        T2._lin(b, T2.SQ8, ia0, Np)
++        T2.mulN_del(b, T2.PLAN3, 3, ia0, ia1, Np)
++        b.free(Np)
++        b.free(r)
+         apply_inplace(b, OPS_P2C, N, inverse=True)
+         T2._lin(b, T1.NUSQ, a1, N)
+         T2._lin(b, T1.SQ, a0, N)
+         T1.mul6_del(b, a0, a1, N)
+         b.free(N)
+-        b.free(rc)
+         self.R = {}
+ 
+ 
