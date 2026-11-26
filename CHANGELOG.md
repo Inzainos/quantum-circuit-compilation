@@ -6,6 +6,59 @@ Dates are local time (UTC-6, México).
 
 ---
 
+## [Unreleased] - 2026-11-26 — Estado Quantum actualizado (rama local/quantum-estado-2026-11-26)
+
+### Added
+- `docs/quantum/` — revisión a fondo 2026-11-24, derivación opción (b) parte 1, coordinación de diseño de la tercera corrida Gold, verificación en vivo del notebook v7, estado Quantum 2026-11-26.
+- README: sección "Estado actual (2026-11-26)".
+
+### Notes
+- Esta rama es documentación de estado (snapshot); no toca main. Tag `v5-4.90803` no creado (nombre y commit objetivo sin confirmar por Elán). `submission/final_submission.zip` en main sigue siendo el swap42 (actualizar a v7, decisión de Elán). Notebook v7 público = v5 en contenido (republicación pendiente de GO). Tercera corrida Gold BLOQUEADA en la derivación opción (b) (incumplió 15:00 del 24 nov; sigue abierta).
+
+## [Unreleased] - 2026-11-24 — Revisión a fondo + Kimi en GitHub + GO tercera corrida Gold
+
+### Added
+- Rama `local/kimi-briefs-v2-2026-11-24` (commits 20a96806, 0d2a6eb1, c2365b20, 2b80768a): briefs Kimi DQI v2 + verificaciones + parches P15/QF (nombres canónicos) + mapa + regla P15/QF (no se le vuelve a pedir a Elán) con sus precisiones del 12:01 y 12:07.
+- Revisión a fondo Quantum (`docs/quantum/REVISION_FONDO_QUANTUM_2026-11-24.md`, 120 l., md5 `c90fa556`).
+
+### Verified (en vivo, 2026-11-24)
+- Selección final Kaggle: **v7 (58647127, 5.00918) + v6 (58633092, 5.00379)**; v4.1 fuera (corrección de Elán 11:50, verificado en vivo 11:52).
+- Notebook v7: versión 7 pública, **contenido v5** (4.90803; cero menciones de P15/hoist/5.00918; último run 2026-11-21 18:22 UTC). Necesita republicación + GO.
+- Tag `v5-4.90803` NO existe (solo 3 tags). Release adopted-v3 SÍ existe con `dqi_omega_karatsuba.kmb` (629,623,070 B, era v3, no el DQI vigente). `final_submission.zip` en main SÍ está (swap42, 67,007,440 B, blob `43a3eb3b`).
+- H8_REHACER_SUMMARY.md sigue sin commitear (repite afirmaciones falsas). Lera sigue pendiente de la llamada de Elán (nov 11).
+
+### Changed
+- GO de Elán (12:18): tercera corrida Gold con rediseño de Q + M6/M9 reales. Coordinación de diseño Brujo → Programación (derivación opción (b) parte 1; M7 sobre semántica de bit; marker in-place; M6/M9 reales; criterios de aceptación). Despacho bloqueado hasta la derivación completa (15:00).
+
+## [Unreleased] - 2026-11-22/23 — H8 NO ACOTABLE + Gold segunda corrida M11 FAIL
+
+### Verified
+- H8 original: NO PASA (Datos D-H8-1/2/3/4; Brujo CONCURRO; Auditor CONCURRO). H8 rehacer (modelo fiel): NO PASA (Datos D-H8R-1/2/3/4/5; Brujo CONCURRO con re-ejecución propia 0 fallos/100,000; Auditor CONCURRO). **Conclusión adoptada: el conjunto de fallo NO ES ACOTABLE.**
+- Corrección mínima del rehacer (camino (a)): PASA (Datos CONCURRO; Brujo CONCURRO; Auditor CONCURRO). Los 5 puntos corregidos (JSON analítico → NO ACOTABLE; puente NO PROBADO + 3 flags en False; limitación D-H8R-3 registrada; total nodal 950,480 y tríadas distintas 4,239; §5/§6/§7 corregidos).
+- Gold segunda corrida: M11 FAIL (verificador oficial, 102,400 tiros; errores de valor 102,400/102,400; fase 0). Circuito Q=15,432, T=149,796, bits=49,140. Causa raíz: `build_euclid_level` no-op (descenso Euclides no implementado) y scan de 1 escalera representativa (12 T vs 44,275 T esperados). M12 no ejecutado. Cadena completa (Datos/Brujo/Auditor CONCURRO PASA — el FAIL está documentado con números).
+
+### Notes
+- La derivación de la opción (b) (derivar la fórmula del carry desde la estructura real del decodificador) quedó como trabajo del Brujo; parte 1 cerrada 2026-11-24; cierre completo comprometido 15:00 del 24 nov.
+
+## [Unreleased] - 2026-11-21 — B7 mergeado (PR #36) + motor nuevo Fase 2 (diseño)
+
+### Fixed
+- B7 (PR #36, merge commit `457cc742`, main): `skip_low` en `verifiers/invsqrt/nr_reference_circuit.py` — el generador R1+R5 es reconstruible desde main (rebuild byte-idéntico: sha `a30a1298`, Q=139, T=2,561). Cadena completa (Datos/Brujo/Auditor).
+
+### Added
+- Motor nuevo (path (c), Fase 2): diseño corregido H1 (totales 349,902/367,398 T; geomean 10.1140/9.9509; factor 72.22×; Q 901) + lectura H3-1 (descenso exacto 54,426/54,947 T) + paquete consolidado (md5 `67f62e8a`). Cadenas completas. GO de Elán para construir el prototipo del kernel de 24 bits.
+- Kernel 24-bit: prototipo Q=144, T=126 (piso, no los 99 T objetivo); D-K24-1 (multiplicaba en la torre t²=K, no en el anillo t²+t+K) — arreglo exacto 0 T/0 Q, re-verificado 2000/2000. Condición de uso satisfecha.
+
+## [Unreleased] - 2026-11-20 — v7 en Kaggle (5.00918, nuevo mejor personal) + hoisting
+
+### Added
+- **v7 en Kaggle: public score 5.00918** (ref 58647127, COMPLETE; geomean local 4.99878; factor DQI 8.774151168773367). ZIP v7 (P15+hoisting): DQI Q=1,857, T=665,819 (hoisted.kmb sha `852739c3`).
+- Hoisting: T 670,307 → 665,819 (−4,488 T exactos, verificado).
+
+### Notes
+- Main avanzó PR #34 → PR #35 (main `222d1011`) → PR #36 (B7, main `457cc742`).
+- El notebook público quedó en versión 7 con contenido v5 (verificado en vivo 2026-11-24; ver entrada 2026-11-24). La corrección D-NB6-1 y los números v6/v7 no llegaron a la pública.
+
 ## [Unreleased] - 2026-10-27 — Estado inicial documentado
 
 ### Added

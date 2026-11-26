@@ -2,6 +2,17 @@
 
 > **Shrinking bottleneck quantum subroutines to reduce hardware requirements for near-term quantum advantage.**
 
+## Estado actual (2026-11-26)
+
+- **Kaggle (mejor personal): v7, public score 5.00918** (ref 58647127, COMPLETE, 2026-11-20). Finales seleccionados: **v7 (5.00918) + v6 (5.00379)**; v4.1 fuera.
+- **Producción vigente:** invsqrt R1+R5 (Q=139, T=2,561, score 389,261.01); DQI QF+P15+hoisting (Q=1,857, T=665,819); dfthcsos seg100@brot13 (score 1,257,565,658.5, factor 2.668×).
+- **Main:** `457cc742` (PR #36, B7: `skip_low` en `nr_reference_circuit.py`, 2026-11-21). `submission/final_submission.zip` en main es el ZIP swap42 (nov 19, 3.53019), no el v7 — actualizarlo a v7 es decisión pendiente de Elán.
+- **Notebook público:** versión 7 en número, pero **contenido v5** (4.90803) — verificado en vivo 2026-11-24 (`docs/quantum/VERIFICACION_NOTEBOOK_V7_2026-11-24.md`). Necesita republicación con el contenido correcto + GO de Elán.
+- **Gold (motor nuevo, Fase 2):** segunda corrida M11 FAIL (verificador oficial, 102,400/102,400 errores de valor; Q=15,432 vs objetivo 901; T=149,796 bajo presupuesto). Tercera corrida con rediseño de Q + M6/M9 reales: GO de Elán 2026-11-24 12:18, **BLOQUEADA en la derivación de la opción (b)** (el carry), que incumplió el cierre de las 15:00 del 24 nov y sigue abierta — ver `docs/quantum/DERIVACION_CARRY_PARTE1_CODIGO_2026-11-24.md` y `docs/quantum/ESTADO_QUANTUM_2026-11-26.md`.
+- **H8:** el conjunto de fallo del carry sigue SIN CARACTERIZAR ("NO ACOTABLE", conclusión adoptada); la corrección mínima PASA.
+- **Documentación del estado:** `docs/quantum/` (revisión a fondo 2026-11-24, derivación opción (b), coordinación de diseño Gold, verificación notebook v7). Briefs de Kimi y parches P15/QF: rama `local/kimi-briefs-v2-2026-11-24` (`docs/kimi-briefs/`).
+- **Fechas oficiales:** entrada/cierre de equipos 13 ene 2027; envío final 20 ene 2027 (11:59 PM UTC).
+
 ## La competición
 
 Esta es una competición de **compilación verificable de circuitos cuánticos** organizada por Google Quantum AI (Kaggle, 2026). El objetivo es encontrar compilaciones más pequeñas y rápidas de subrutinas críticas (kickmix circuits) usando agentes de programación AI, optimización clásica y conocimientos algorítmicos en un bucle de verificación cerrado.
