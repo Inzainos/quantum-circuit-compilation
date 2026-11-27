@@ -1,0 +1,67 @@
+01:17:42 | INFO    | Coeficientes Chebyshev generados: 512 segmentos | frac_bits=34 | 0.58 ms
+01:17:42 | INFO    | --------------------------------------------------------------------
+01:17:42 | INFO    | AUDITORÍA COMPLETADA (seg_bits=9, frac_bits=34, p_cut=34)
+01:17:42 | INFO    | Error máximo medido  : 9.2549e-10 (Límite objetivo: 3.76e-09) -> OK
+01:17:42 | INFO    | Peor punto x         : 1.25195252
+01:17:42 | INFO    | Cúbits pico (Q)      : 110 (vs 261 baseline -> ahorro de 151 cúbits)
+01:17:42 | INFO    | Toffoli / AND (C)    : 1858 (vs 4,467 baseline -> ahorro de 2609 ops)
+01:17:42 | INFO    | Métrica Q * C        : 204,380 (vs ~1,310,000 baseline | meta logshift2: 390,005)
+01:17:42 | INFO    | --------------------------------------------------------------------
+
+Muestra de salida QASM generada para el kernel MAC in-place:
+
+// ====================================================================
+// Primitiva MAC Truncada In-Place (acc[34] += reg_a * dx[25])
+// Corte de precisión P_cut = 34 | Cero registro 'prod' materializado
+// ====================================================================
+gate ctrl_iadd_bit a, b, cin, cout {
+    // Sumador reversible controlado de 1 bit (Gidney-style)
+    ccx a, b, cout;
+    cx a, b;
+    ccx cin, b, cout;
+    cx cin, b;
+}
+
+// --- Fila MAC j=0 (peso 2^-34), bits de A desde i=34..33 ---
+// --- Fila MAC j=1 (peso 2^-33), bits de A desde i=33..33 ---
+ccx dx[1], reg_a[33], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[0];        // Accumulate in-place
+ccx dx[1], reg_a[33], tmp_and[0]; // Uncompute (ANDz en compilación T)
+// --- Fila MAC j=2 (peso 2^-32), bits de A desde i=32..33 ---
+ccx dx[2], reg_a[32], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[0];        // Accumulate in-place
+ccx dx[2], reg_a[32], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[2], reg_a[33], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[1];        // Accumulate in-place
+ccx dx[2], reg_a[33], tmp_and[0]; // Uncompute (ANDz en compilación T)
+// --- Fila MAC j=3 (peso 2^-31), bits de A desde i=31..33 ---
+ccx dx[3], reg_a[31], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[0];        // Accumulate in-place
+ccx dx[3], reg_a[31], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[3], reg_a[32], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[1];        // Accumulate in-place
+ccx dx[3], reg_a[32], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[3], reg_a[33], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[2];        // Accumulate in-place
+ccx dx[3], reg_a[33], tmp_and[0]; // Uncompute (ANDz en compilación T)
+// --- Fila MAC j=4 (peso 2^-30), bits de A desde i=30..33 ---
+ccx dx[4], reg_a[30], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[0];        // Accumulate in-place
+ccx dx[4], reg_a[30], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[4], reg_a[31], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[1];        // Accumulate in-place
+ccx dx[4], reg_a[31], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[4], reg_a[32], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[2];        // Accumulate in-place
+ccx dx[4], reg_a[32], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[4], reg_a[33], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[3];        // Accumulate in-place
+ccx dx[4], reg_a[33], tmp_and[0]; // Uncompute (ANDz en compilación T)
+// --- Fila MAC j=5 (peso 2^-29), bits de A desde i=29..33 ---
+ccx dx[5], reg_a[29], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[0];        // Accumulate in-place
+ccx dx[5], reg_a[29], tmp_and[0]; // Uncompute (ANDz en compilación T)
+ccx dx[5], reg_a[30], tmp_and[0]; // Compute partial bit
+cx tmp_and[0], acc[1];        // Accumulate in-place
+ccx dx[5], reg_a[30], tmp_and[0]; // Uncompute (ANDz en compilación T)
+// ... [Resto de filas truncadas generadas dinámicamente por el compilador] ...
